@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: "Times New Roman", Times, serif;
+            line-height: 1.6;
+            color: #000;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            text-align: justify;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-top: 30px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+
+        p {
+            text-align: justify;
+            margin-bottom: 15px;
+            text-indent: 30px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 5px;
+            padding-left: 20px;
+            text-indent: -20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div style="text-align: center; margin-bottom: 60px; border-bottom: 1px solid #ccc; padding-bottom: 20px;">
+        <p style="text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; font-size: 0.9em; color: #555;">
+            PFE Phase 1 Report</p>
+        <h1 style="margin: 20px 0; font-size: 24px; text-transform: uppercase;">Design, Development, and Deployment of a
+            RAG Conversational Assistant Based on the Model Context Protocol (MCP) for Intelligent Access to DNSI
+            Business Documents via SharePoint CERP</h1>
+        <p style="font-style: italic; margin-top: 20px;">
+            Aivancity School for Technology and Business, Villejuif, France<br>
+            <strong>Jean Direl NZE PGE5</strong>
+        </p>
+    </div>
+
+    <h2>General Context and Problem Statement</h2>
+    <p>1. Digital transformation within large organizations such as the DNSI (Digitization and Information Systems
+        Department) is accompanied by a massive accumulation of technical and business documentation, primarily
+        stored on collaborative platforms like SharePoint CERP. In the absence of advanced semantic interrogation
+        mechanisms, access to this informational asset relies essentially on manual consultation or basic search
+        functionalities, which are insufficient to meet complex and contextual needs. This situation creates
+        increasing difficulty in rapidly locating relevant and actionable information, slowing down operational and
+        decision-making processes, and revealing a clear need for more intelligent and interactive knowledge access
+        tools.</p>
+
+    <p>2. The advent of Large Language Models (LLMs) offers a new natural language interface for knowledge access.
+        However, their direct integration into a corporate environment raises critical reliability and security
+        challenges. Generic hallucinations inherent in generative models, coupled with their lack of knowledge
+        regarding the organization's private data (data absent from their training corpus), mandate the adoption of
+        hybrid architectures. The scientific challenge here is to design a system capable of interfacing these
+        models with the private SharePoint corpus in a secure, standardized, and verifiable manner.</p>
+
+    <h2>Literature Review and State of the Art</h2>
+    <p>3. Recent scientific literature identifies the RAG (Retrieval-Augmented Generation) architecture as the
+        reference solution for grounding LLM responses in an external knowledge base (Lewis et al., 2020). This
+        approach combines a dense information retrieval system with a text generator, allowing for knowledge updates
+        without costly model retraining. The use of vector indexes, such as Faiss, enables semantic similarity
+        search significantly superior to lexical methods for open-ended questions.</p>
+
+    <p>4. However, integrating heterogeneous data sources (data silos like SharePoint) traditionally relies on
+        fragile and hard-to-maintain ad-hoc connectors. The state of the art is evolving towards standardizing
+        interfaces between AI assistants and data sources, embodied by the recent emergence of the <em>Model Context
+            Protocol</em> (MCP). This protocol aims to normalize how context is exposed to models, promising
+        increased interoperability and security compared to proprietary integration solutions. Studying this
+        protocol within a real-world application framework constitutes a novel research axis.</p>
+
+    <h2>Proposed System Description</h2>
+    <p>5. This final year project proposes the design of a modular RAG architecture, based on the principles of the
+        Model Context Protocol (MCP), to enable unified access to business documents hosted on SharePoint CERP. The
+        system is designed to act as an intelligent intermediary, retrieving relevant context via semantic search
+        mechanisms before submitting it to a high-performance language model (Mistral AI). The objective is to
+        ensure that every generated response is sourced and traceable, meeting the rigorous standards of the DNSI.
+    </p>
+
+    <p>6. The technical solution revolves around an advanced processing pipeline including secure document
+        ingestion, segmentation, and vectorization. Particular attention is paid to authentication and rights
+        management, integrating an SSO (Single Sign-On) mechanism to ensure the assistant respects the ACLs (Access
+        Control Lists) defined in SharePoint. The developed prototype, internally named "AntiGravity", serves as a
+        proof of concept to validate this standardized architectural approach against real production constraints
+        (corporate proxy, latency, confidentiality).</p>
+
+    <h2>Methodology and Architecture</h2>
+    <p>7. The research methodology adopted is "Design Science Research," iterating between theoretical design and
+        practical implementation. The first phase focuses on developing MCP-compatible connectors for the extraction
+        and pre-processing of unstructured data (PDF, DOCX) from SharePoint. The logical architecture separates the
+        context server (managing the Faiss index and documents) from the conversational client, fostering horizontal
+        scalability and increased maintainability.</p>
+
+    <p>8. The current development phase implements the user interface and the security layer. The application,
+        developed in Python (Streamlit), integrates re-ranking and query classification algorithms to optimize
+        result relevance. Deployment is planned on containerized infrastructure, complying with enterprise security
+        standards. The final system evaluation will rely on quantitative metrics (document retrieval precision) and
+        qualitative metrics (user satisfaction, response fluency).</p>
+
+    <h2>Conclusion and Scientific Contributions</h2>
+    <p>9. This first design phase confirms the relevance of coupling the RAG architecture with a standardized
+        MCP-like approach to solve enterprise information access problems. The developed theoretical model overcomes
+        the limitations of rigid connectors, offering the flexibility necessary to evolve with the DNSI information
+        system. Initial tests validate the system's ability to synthesize complex information from multiple
+        SharePoint documents with a minimal hallucination rate.</p>
+
+    <p>10. Beyond the technical implementation, this work contributes to understanding the challenges of integrating
+        Generative AI into traditional "Enterprise IT" ecosystems. It proposes a reference framework for the secure
+        deployment of cognitive assistants, highlighting the importance of data sovereignty and protocol
+        interoperability. Future developments will aim to extend protocol coverage to other business data sources,
+        thereby strengthening the organization's collective intelligence.</p>
+
+    <h2>Bibliography</h2>
+    <ul>
+        <li>[1] Lewis, P., et al. (2020). "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks".
+            <em>Advances in Neural Information Processing Systems</em>, 33.
+        </li>
+        <li>[2] Anthropic (2024). "Model Context Protocol: An Open Standard for Connecting AI Systems to Data".
+            <em>Technical Specification</em>.
+        </li>
+        <li>[3] Jiang, A., et al. (2023). "Mistral 7B". <em>arXiv preprint arXiv:2310.06825</em>.</li>
+        <li>[4] Microsoft (2024). "SharePoint Online Architecture and Security Model". <em>Microsoft Technical
+                Documentation</em>.</li>
+        <li>[5] Johnson, J., Douze, M., & Jégou, H. (2019). "Billion-scale similarity search with GPUs". <em>IEEE
+                Transactions on Big Data</em>.</li>
+        <li>[6] Gao, Y., et al. (2024). "Retrieval-Augmented Generation for Large Language Models: A Survey".
+            <em>arXiv preprint arXiv:2312.10997</em>.
+        </li>
+        <li>[7] Vaswani, A., et al. (2017). "Attention Is All You Need". <em>Advances in Neural Information
+                Processing Systems</em>, 30.</li>
+        <li>[8] Hevner, A. R., et al. (2004). "Design Science in Information Systems Research". <em>MIS
+                Quarterly</em>, 28(1).</li>
+        <li>[9] OpenAI (2023). "GPT-4 Technical Report". <em>arXiv preprint arXiv:2303.08774</em>.</li>
+        <li>[10] ISO/IEC 27001 (2022). "Information security, cybersecurity and privacy protection".
+            <em>International Organization for Standardization</em>.
+        </li>
+    </ul>
+
+</body>
+
+</html>
