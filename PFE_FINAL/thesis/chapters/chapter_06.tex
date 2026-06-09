@@ -1,9 +1,407 @@
 %==============================================================================
-% CHAPTER_06 — PLACEHOLDER
-% TODO: Content to be written
+% CHAPTER 6 — EVALUATION AND RESULTS
 %==============================================================================
-\chapter{[Title to be defined — see thesis\_outline.md]}
-\label{chap:chapter-06}
+\chapter{Evaluation and Results}
+\label{chap:evaluation}
 
-\textit{This chapter is under construction. See \texttt{PFE\_FINAL/02\_Research\_Design/thesis\_outline.md} for the planned content of this chapter.}
+This chapter presents the experimental evaluation of the AntiGravity system across the four dimensions defined in the methodology (Chapter~\ref{chap:methodology}): retrieval quality, generation quality, system performance, and user acceptance. Each section states the experimental protocol, presents the results, tests the associated hypotheses, and interprets the findings. All metric values marked \textbf{[TBD]} represent slots to be populated upon completion of experiments; the statistical framework, analysis structure, and interpretation guidance are fully specified.
 
+%------------------------------------------------------------------------------
+\section{Evaluation Setup}
+\label{sec:eval-setup}
+%------------------------------------------------------------------------------
+
+\subsection{Experimental Conditions}
+
+All evaluations are conducted across three conditions:
+
+\begin{itemize}
+  \item \textbf{Condition A — LLM Alone:} Mistral 7B Instruct queried directly, temperature=0.1, no retrieval augmentation. Queries answered from parametric knowledge only.
+  \item \textbf{Condition B — Naive RAG:} FAISS flat retrieval (top-$k=5$, no re-ranking, no ACL filtering on a single-user corpus), context injected with the same prompt template. No MCP layer.
+  \item \textbf{Condition C — RAG+MCP (AntiGravity):} Full system as described in Chapters~\ref{chap:architecture}--\ref{chap:implementation}: MCP-mediated retrieval, ACL filtering, cross-encoder re-ranking, Mistral 7B generation.
+\end{itemize}
+
+All conditions use identical generation parameters (temperature=0.1, top\_p=0.9, max\_new\_tokens=512, repetition\_penalty=1.1) and the same underlying language model. Observed differences are therefore attributable to the architecture, not to model variation.
+
+\subsection{Benchmark Dataset}
+
+The evaluation benchmark comprises \textbf{50 question-answer pairs} derived from the DNSI SharePoint corpus following the protocol of Section~\ref{sec:method-evaluation}. The dataset is structured as follows:
+
+\begin{table}[H]
+\centering
+\caption{Benchmark dataset composition}
+\label{tab:benchmark-composition}
+\begin{tabularx}{\textwidth}{@{}lXrr@{}}
+\toprule
+\textbf{Category} & \textbf{Description} & \textbf{Count} & \textbf{\%} \\
+\midrule
+Factoid & Single-document, specific fact retrieval & 20 & 40\% \\
+Multi-hop & Synthesis required across 2+ documents & 15 & 30\% \\
+Procedural & Step-by-step instruction queries & 10 & 20\% \\
+Unanswerable & Answer not in corpus & 5 & 10\% \\
+\midrule
+\textbf{Total} & & \textbf{50} & \textbf{100\%} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Inter-annotator agreement on the ground-truth relevance labels: Cohen's $\kappa = $ \textbf{[TBD]} (target $\geq 0.7$, indicating substantial agreement). Pairs with initial $\kappa < 0.6$ were adjudicated through structured discussion between the two annotators.
+
+%------------------------------------------------------------------------------
+\section{Retrieval Evaluation}
+\label{sec:eval-retrieval}
+%------------------------------------------------------------------------------
+
+\subsection{Results}
+
+Retrieval quality is evaluated on Conditions B and C (Condition A has no retrieval component). Table~\ref{tab:retrieval-results} reports all retrieval metrics across configurations.
+
+\begin{table}[H]
+\centering
+\caption{Retrieval evaluation results (Conditions B and C, $N=45$ answerable questions)}
+\label{tab:retrieval-results}
+\begin{tabularx}{\textwidth}{@{}lXXXXX@{}}
+\toprule
+\textbf{System} & \textbf{P@1} & \textbf{P@3} & \textbf{P@5} & \textbf{MRR} & \textbf{nDCG@5} \\
+\midrule
+BM25 (lexical baseline) & [TBD] & [TBD] & [TBD] & [TBD] & [TBD] \\
+Cond. B: Naive RAG (FAISS, no rerank) & [TBD] & [TBD] & [TBD] & [TBD] & [TBD] \\
+Cond. C: RAG+MCP (FAISS + rerank) & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} \\
+\midrule
+$\Delta$ C vs. B (absolute) & [TBD] & [TBD] & [TBD] & [TBD] & [TBD] \\
+$p$-value (Wilcoxon, $\alpha=0.05$) & [TBD] & [TBD] & [TBD] & [TBD] & [TBD] \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Hypothesis H3 test (dense retrieval $>$ BM25):} \textbf{[Confirmed / Not confirmed]}. Dense retrieval via FAISS achieved P@5 = [TBD] vs. BM25 P@5 = [TBD], a difference of [TBD] ($p$ = [TBD]). The improvement is attributable to the ability of semantic embeddings to match conceptually related queries to documents using different vocabulary than the query terms — a critical capability for domain-specific DNSI terminology that is inconsistently normalized across documents.
+
+\paragraph{Hypothesis H6 test (re-ranking $\geq +15\%$ MRR):} \textbf{[Confirmed / Not confirmed]}. Re-ranking improved MRR from [TBD] (Condition B) to [TBD] (Condition C), a relative improvement of [TBD]\% ($p$ = [TBD]).
+
+\subsection{Retrieval Analysis by Query Type}
+
+\begin{table}[H]
+\centering
+\caption{Retrieval Precision@5 by query category}
+\label{tab:retrieval-by-type}
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
+\toprule
+\textbf{Query Type} & \textbf{Cond. B (Naive RAG)} & \textbf{Cond. C (RAG+MCP)} & \textbf{$\Delta$} \\
+\midrule
+Factoid ($n=20$) & [TBD] & [TBD] & [TBD] \\
+Multi-hop ($n=15$) & [TBD] & [TBD] & [TBD] \\
+Procedural ($n=10$) & [TBD] & [TBD] & [TBD] \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Expected finding:} Multi-hop queries are anticipated to show the largest benefit from re-ranking, as the cross-encoder can explicitly score the relevance of each passage to the specific multi-document synthesis task, whereas the bi-encoder embedding captures only broad semantic proximity. Factoid queries are expected to show smaller gains, as the top-1 result is typically correct even without re-ranking.
+
+\subsection{Retrieval Failure Analysis}
+
+Retrieval failures (no relevant document in top-5) are analyzed qualitatively. Anticipated failure modes:
+
+\begin{itemize}
+  \item \textbf{Vocabulary mismatch:} Query uses technical acronyms not present in training data of the embedding model. \textit{Mitigation: domain-specific embedding fine-tuning (future work).}
+  \item \textbf{Document quality:} Scanned PDF pages with imperfect OCR produce corrupted text chunks that embed poorly.
+  \item \textbf{Information not indexed:} Document removed from SharePoint before the last ingestion cycle, or protected by ACLs that prevented ingestion. The system correctly returns a graceful refusal for unanswerable queries.
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\section{Generation Quality Evaluation}
+\label{sec:eval-generation}
+%------------------------------------------------------------------------------
+
+\subsection{RAGAS Metrics}
+
+Generation quality is evaluated using the RAGAS framework \citep{Es2023RAGAS} across all three conditions. RAGAS metrics for Condition A are partial (no context to evaluate precision/recall against).
+
+\begin{table}[H]
+\centering
+\caption{RAGAS generation quality results ($N=45$ answerable questions)}
+\label{tab:ragas-results}
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+\textbf{Condition} & \textbf{Faithfulness} & \textbf{Answer Relevancy} & \textbf{Context Precision} & \textbf{Context Recall} \\
+\midrule
+A: LLM Alone & [TBD] & [TBD] & N/A & N/A \\
+B: Naive RAG & [TBD] & [TBD] & [TBD] & [TBD] \\
+C: RAG+MCP & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} \\
+\midrule
+$\Delta$ C vs. A & [TBD] & [TBD] & --- & --- \\
+$\Delta$ C vs. B & [TBD] & [TBD] & [TBD] & [TBD] \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Hypothesis H1 test (RAG+MCP hallucination $<$ LLM Alone):} \textbf{[Confirmed / Not confirmed]}. The faithfulness score for Condition C ([TBD]) vs. Condition A ([TBD]) represents the primary evidence for H1.
+
+\paragraph{Hypothesis H2 test (RAG+MCP faithfulness $>$ Naive RAG):} \textbf{[Confirmed / Not confirmed]}. The difference in faithfulness between Conditions C and B isolates the contribution of the MCP layer and re-ranking to generation grounding.
+
+\subsection{Hallucination Rate Analysis}
+
+\begin{table}[H]
+\centering
+\caption{Hallucination rate by condition and query type}
+\label{tab:hallucination-results}
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+\textbf{Condition} & \textbf{Factoid} & \textbf{Multi-hop} & \textbf{Procedural} & \textbf{Overall} \\
+\midrule
+A: LLM Alone & [TBD] & [TBD] & [TBD] & [TBD] \\
+B: Naive RAG & [TBD] & [TBD] & [TBD] & [TBD] \\
+C: RAG+MCP & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Expected findings:} LLM Alone (Condition A) is expected to exhibit the highest hallucination rate, particularly on queries about DNSI-specific processes and systems absent from Mistral 7B's training data. Multi-hop queries are expected to show higher hallucination rates than factoid queries across all conditions, as they require synthesis across documents — a task where the model has more opportunity to introduce confabulated transitions between retrieved facts.
+
+\subsection{Hallucination Taxonomy}
+
+Manual annotation of hallucinated responses identifies the following categories (to be populated with counts):
+
+\begin{table}[H]
+\centering
+\caption{Hallucination taxonomy with representative examples}
+\label{tab:hallucination-types}
+\begin{tabularx}{\textwidth}{@{}lXXr@{}}
+\toprule
+\textbf{Type} & \textbf{Description} & \textbf{Example Pattern} & \textbf{Count (Cond. A)} \\
+\midrule
+Factual confabulation & Model invents specific facts absent from corpus & Invented procedure steps, version numbers & [TBD] \\
+Source attribution error & Correct fact attributed to wrong document & Cross-document conflation & [TBD] \\
+Temporal hallucination & Incorrect dates or version information & Outdated policy dates cited as current & [TBD] \\
+Scope expansion & Response extrapolates beyond corpus content & General IT advice presented as DNSI policy & [TBD] \\
+Refusal failure & Model answers unanswerable question & Fabricated answer for out-of-corpus query & [TBD] \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Qualitative Response Analysis}
+
+Three representative examples are presented to illustrate the qualitative difference between conditions. Each example shows the query, and the responses from Conditions A, B, and C side-by-side.
+
+\paragraph{Example 1 --- Factoid query (anticipated outcome: clear advantage for RAG conditions):}
+
+\textit{Query:} ``What is the retention period for project closure reports in the DNSI document management policy?''
+
+\begin{itemize}
+  \item \textbf{Condition A (LLM Alone):} ``[TBD --- expected: generic response citing typical enterprise retention periods of 3--7 years, without DNSI-specific grounding]''
+  \item \textbf{Condition B (Naive RAG):} ``[TBD --- expected: correct answer retrieved but possibly without attribution]''
+  \item \textbf{Condition C (RAG+MCP):} ``[TBD --- expected: correct answer with explicit citation to source document]''
+\end{itemize}
+
+\paragraph{Example 2 --- Multi-hop query (anticipated outcome: largest advantage for Condition C):}
+
+\textit{Query:} ``What are the security requirements for a new application that will process personal data and integrate with the CERP infrastructure?''
+
+\paragraph{Example 3 --- Unanswerable query (anticipated outcome: correct refusal in Condition C):}
+
+\textit{Query:} ``What is the contact email of the DNSI's external cybersecurity audit firm?''
+
+%------------------------------------------------------------------------------
+\section{System Performance Evaluation}
+\label{sec:eval-performance}
+%------------------------------------------------------------------------------
+
+\subsection{End-to-End Latency}
+
+Latency is measured over $N=200$ queries representative of the benchmark distribution, executed sequentially in a single-user scenario on the DNSI deployment infrastructure.
+
+\begin{table}[H]
+\centering
+\caption{End-to-end latency breakdown (milliseconds, single user, CPU inference)}
+\label{tab:latency-results}
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+\textbf{Component} & \textbf{Mean} & \textbf{P50} & \textbf{P95} & \textbf{P99} \\
+\midrule
+Query encoding (embedding) & [TBD] & [TBD] & [TBD] & [TBD] \\
+FAISS retrieval ($K=20$) & [TBD] & [TBD] & [TBD] & [TBD] \\
+ACL permission resolution & [TBD] & [TBD] & [TBD] & [TBD] \\
+Cross-encoder re-ranking & [TBD] & [TBD] & [TBD] & [TBD] \\
+MCP protocol overhead & [TBD] & [TBD] & [TBD] & [TBD] \\
+LLM generation (Mistral 7B CPU) & [TBD] & [TBD] & [TBD] & [TBD] \\
+\midrule
+\textbf{Total end-to-end} & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} \\
+\midrule
+NFR01 target (P95 $\leq$ 5000ms) & & & \textbf{[Met/Exceeded]} & \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Hypothesis H4 test (MCP overhead within SLA):} \textbf{[Confirmed / Not confirmed]}. The MCP protocol overhead is measured as the difference in total pipeline latency between Condition B (direct retrieval) and Condition C (MCP-mediated retrieval), holding all other components constant. Expected overhead: 50--150ms (serialization + HTTP round-trip within the same host).
+
+\paragraph{Critical finding:} LLM generation latency on CPU is anticipated to dominate the total pipeline latency, likely exceeding NFR01 for the current infrastructure. This is a deployment infrastructure limitation (no GPU available), not an architectural limitation. The measurement serves as the baseline for the GPU deployment recommendation.
+
+\subsection{MCP Protocol Overhead Isolation}
+
+To precisely isolate the MCP overhead, the same 50 queries are executed through two paths:
+\begin{enumerate}
+  \item Direct Python function call to the retrieval module (bypassing MCP transport)
+  \item Via the MCP \texttt{search\_documents} tool call (full MCP protocol)
+\end{enumerate}
+
+The difference in P50 latency between these paths represents the pure MCP serialization and transport overhead, expected to be in the range of 20--80ms for localhost HTTP/SSE communication.
+
+\subsection{Memory Footprint}
+
+\begin{table}[H]
+\centering
+\caption{Memory footprint by component}
+\label{tab:memory-footprint}
+\begin{tabularx}{\textwidth}{@{}lXr@{}}
+\toprule
+\textbf{Component} & \textbf{Description} & \textbf{Memory (MB)} \\
+\midrule
+FAISS index (\textit{N} chunks, $d=768$) & $N \times 768 \times 4$ bytes + overhead & [TBD] \\
+Chunk metadata store & JSON Lines, $N$ chunks & [TBD] \\
+Embedding model (\texttt{all-mpnet-base-v2}) & Loaded into memory & $\sim$420 \\
+Cross-encoder (MS-MARCO MiniLM L6) & Loaded into memory & $\sim$85 \\
+Mistral 7B Q4\_K\_M (llama-cpp) & 4-bit quantized model & $\sim$4,500 \\
+\midrule
+\textbf{Total} & & \textbf{[TBD]} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{User Evaluation}
+\label{sec:eval-user}
+%------------------------------------------------------------------------------
+
+\subsection{Participant Profile}
+
+The user study was conducted with $N = $ \textbf{[TBD]} DNSI employees. Participants were recruited through the DNSI's internal communication channel. Inclusion criteria: regular SharePoint users ($\geq$ 3 days/week), no prior exposure to AntiGravity. Participant profiles:
+
+\begin{itemize}
+  \item Technical roles (developers, architects): \textbf{[TBD]}\%
+  \item Operational roles (project managers, analysts): \textbf{[TBD]}\%
+  \item Management roles: \textbf{[TBD]}\%
+\end{itemize}
+
+\subsection{SUS and TAM Results}
+
+\begin{table}[H]
+\centering
+\caption{System Usability Scale and TAM results}
+\label{tab:user-study-results}
+\begin{tabularx}{\textwidth}{@{}lXrr@{}}
+\toprule
+\textbf{Instrument} & \textbf{Construct} & \textbf{Score (Mean $\pm$ SD)} & \textbf{95\% CI} \\
+\midrule
+SUS & Overall usability (0--100) & [TBD] $\pm$ [TBD] & [TBD, TBD] \\
+TAM & Perceived Usefulness (1--7) & [TBD] $\pm$ [TBD] & [TBD, TBD] \\
+TAM & Perceived Ease of Use (1--7) & [TBD] $\pm$ [TBD] & [TBD, TBD] \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Hypothesis H5 test (AntiGravity rated significantly more useful):} \textbf{[Confirmed / Not confirmed]}. A paired Wilcoxon signed-rank test compares perceived usefulness ratings for AntiGravity vs. the current SharePoint search on the 5 task scenarios.
+
+\paragraph{SUS interpretation (to be completed):} A SUS score above 68 is considered above average; above 80 is considered excellent \citep{Brooke1996SUS}. [TBD --- expected score in the 65--80 range, reflecting good usability bounded by latency concerns].
+
+\subsection{Task Performance Results}
+
+\begin{table}[H]
+\centering
+\caption{Task-based evaluation results ($N=[TBD]$ participants, 5 tasks)}
+\label{tab:task-results}
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+\textbf{Task} & \textbf{Type} & \textbf{AntiGravity Completion \%} & \textbf{SharePoint Completion \%} & \textbf{$\Delta$ Time (s)} \\
+\midrule
+T1 & Factoid & [TBD] & [TBD] & [TBD] \\
+T2 & Multi-hop & [TBD] & [TBD] & [TBD] \\
+T3 & Procedural & [TBD] & [TBD] & [TBD] \\
+T4 & Multi-hop & [TBD] & [TBD] & [TBD] \\
+T5 & Unanswerable & [TBD] & [TBD] & [TBD] \\
+\midrule
+\textbf{Average} & & \textbf{[TBD]} & \textbf{[TBD]} & \textbf{[TBD]} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Expected pattern:} Multi-hop and procedural tasks are expected to show the largest time savings with AntiGravity, as these are precisely the query types that current SharePoint search handles worst. Factoid tasks may show smaller advantages or even parity, since SharePoint's keyword search can effectively locate a specific document containing a known term.
+
+\subsection{Qualitative Themes}
+
+Thematic analysis of the semi-structured interviews \citep{Braun2006} identifies the following themes (to be populated with participant quotes):
+
+\begin{table}[H]
+\centering
+\caption{Qualitative themes from user interviews}
+\label{tab:qualitative-themes}
+\begin{tabularx}{\textwidth}{@{}lXXr@{}}
+\toprule
+\textbf{Theme} & \textbf{Description} & \textbf{Exemplar Quote} & \textbf{Freq.} \\
+\midrule
+Trust in sourced responses & Users value explicit source citations as trust signal & ``[TBD]'' & [TBD]/[N] \\
+Latency as adoption barrier & Response time perceived as too slow for routine use & ``[TBD]'' & [TBD]/[N] \\
+Multi-document synthesis value & Recognition of value for complex, cross-document queries & ``[TBD]'' & [TBD]/[N] \\
+Uncertainty about corpus coverage & Users unsure what documents are indexed & ``[TBD]'' & [TBD]/[N] \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Ablation Study}
+\label{sec:eval-ablation}
+%------------------------------------------------------------------------------
+
+To disentangle the contributions of individual components, an ablation study evaluates four configurations on the retrieval-generation pipeline:
+
+\begin{table}[H]
+\centering
+\caption{Ablation study: component contribution to faithfulness and P@5}
+\label{tab:ablation}
+\begin{tabularx}{\textwidth}{@{}lXXXX@{}}
+\toprule
+\textbf{Configuration} & \textbf{Re-ranking} & \textbf{MCP Layer} & \textbf{P@5} & \textbf{Faithfulness} \\
+\midrule
+A1: FAISS only & No & No & [TBD] & [TBD] \\
+A2: FAISS + rerank & Yes & No & [TBD] & [TBD] \\
+A3: FAISS + MCP (no rerank) & No & Yes & [TBD] & [TBD] \\
+A4: FAISS + MCP + rerank (AntiGravity) & Yes & Yes & \textbf{[TBD]} & \textbf{[TBD]} \\
+\midrule
+Marginal value of re-ranking ($\Delta$ A2 vs. A1) & & & [TBD] & [TBD] \\
+Marginal value of MCP ($\Delta$ A3 vs. A1) & & & [TBD] & [TBD] \\
+Interaction effect ($\Delta$ A4 vs. A2+A3-A1) & & & [TBD] & [TBD] \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Expected finding:} Re-ranking is expected to contribute the largest marginal improvement to P@5. The MCP layer, by design, contributes primarily to security (ACL enforcement) rather than retrieval precision — its precision contribution, if any, will come from the structured context assembly (context budget management and citation formatting) improving generation faithfulness rather than raw retrieval metrics.
+
+%------------------------------------------------------------------------------
+\section{Hypothesis Testing Summary}
+\label{sec:eval-hypotheses}
+%------------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Summary of hypothesis tests}
+\label{tab:hypothesis-summary}
+\begin{tabularx}{\textwidth}{@{}llXlX@{}}
+\toprule
+\textbf{ID} & \textbf{Hypothesis} & \textbf{Test Method} & \textbf{Outcome} & \textbf{Key Evidence} \\
+\midrule
+H1 & RAG+MCP hallucination $<$ LLM Alone & RAGAS Faithfulness; Hallucination rate & [TBD] & $\Delta$Faithfulness=[TBD]; HR$_C$=[TBD] vs. HR$_A$=[TBD] \\
+H2 & RAG+MCP faithfulness $>$ Naive RAG & RAGAS Faithfulness & [TBD] & $\Delta$=[TBD], $p$=[TBD] \\
+H3 & Dense retrieval $>$ BM25 (P@5) & Wilcoxon signed-rank & [TBD] & $\Delta$P@5=[TBD], $p$=[TBD] \\
+H4 & MCP overhead within SLA ($<$5s P95) & Latency benchmarking & [TBD] & P95$_{\text{MCP overhead}}$=[TBD]ms \\
+H5 & AntiGravity more useful than SharePoint search & Paired Wilcoxon on TAM-PU & [TBD] & TAM-PU$_C$=[TBD] vs. [TBD], $p$=[TBD] \\
+H6 & Re-ranking $\geq +15\%$ MRR & MRR comparison & [TBD] & MRR$_B$=[TBD]; MRR$_C$=[TBD]; $\Delta$=[TBD]\% \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Chapter Summary}
+\label{sec:eval-summary}
+%------------------------------------------------------------------------------
+
+This chapter has presented the evaluation framework and result structure for all four evaluation dimensions. The experimental design provides a rigorous basis for answering each of the five research questions through the testing of six hypotheses. Key contributions of this evaluation are: (1) the first controlled comparison of LLM alone, naive RAG, and RAG+MCP on a private SharePoint enterprise corpus; (2) quantitative isolation of the MCP protocol overhead; (3) a qualitative hallucination taxonomy specific to enterprise knowledge access; and (4) a mixed-methods user evaluation combining SUS, TAM, task performance, and thematic interview analysis.
+
+The \textbf{[TBD]} markers represent experimental values to be populated upon completion of the evaluation runs. The complete result tables will be finalized before thesis submission.

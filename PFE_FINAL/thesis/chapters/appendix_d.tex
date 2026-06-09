@@ -1,9 +1,38 @@
 %==============================================================================
-% APPENDIX_D — PLACEHOLDER
-% TODO: Content to be written
+% APPENDIX D — RAW EVALUATION DATA
 %==============================================================================
-\chapter{[Title to be defined — see thesis\_outline.md]}
-\label{chap:appendix-d}
+\chapter{Raw Evaluation Data}
+\label{app:raw-data}
 
-\textit{This chapter is under construction. See \texttt{PFE\_FINAL/02\_Research\_Design/thesis\_outline.md} for the planned content of this chapter.}
+This appendix summarizes the raw evaluation data format. Complete numerical results will be populated upon completion of evaluation experiments.
 
+\section*{Data Format: Retrieval Evaluation}
+
+For each benchmark question $q_i$ and experimental condition $C \in \{B, C\}$, the following fields are recorded:
+
+\begin{itemize}
+  \item \texttt{query\_id}: benchmark question ID
+  \item \texttt{condition}: B or C
+  \item \texttt{retrieved\_chunk\_ids}: ordered list of retrieved chunk IDs
+  \item \texttt{relevant\_chunk\_ids}: ground-truth relevant chunk IDs
+  \item \texttt{precision\_at\_1}, \texttt{precision\_at\_3}, \texttt{precision\_at\_5}
+  \item \texttt{recall\_at\_5}
+  \item \texttt{reciprocal\_rank}
+  \item \texttt{ndcg\_at\_5}
+  \item \texttt{retrieval\_latency\_ms}
+\end{itemize}
+
+\section*{Data Format: Generation Evaluation}
+
+For each benchmark question $q_i$ and condition $C \in \{A, B, C\}$:
+
+\begin{itemize}
+  \item \texttt{query\_id}, \texttt{condition}
+  \item \texttt{generated\_response}: full response text
+  \item \texttt{faithfulness\_ragas}: RAGAS faithfulness score [0, 1]
+  \item \texttt{answer\_relevancy\_ragas}: RAGAS answer relevancy [0, 1]
+  \item \texttt{hallucination\_annotator\_1}: binary (0/1)
+  \item \texttt{hallucination\_annotator\_2}: binary (0/1)
+  \item \texttt{hallucination\_type}: taxonomy category (if hallucinated)
+  \item \texttt{generation\_latency\_ms}
+\end{itemize}

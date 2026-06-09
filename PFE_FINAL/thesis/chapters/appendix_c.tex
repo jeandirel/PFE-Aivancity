@@ -1,9 +1,84 @@
 %==============================================================================
-% APPENDIX_C — PLACEHOLDER
-% TODO: Content to be written
+% APPENDIX C — SYSTEM CONFIGURATION AND DEPLOYMENT
 %==============================================================================
-\chapter{[Title to be defined — see thesis\_outline.md]}
-\label{chap:appendix-c}
+\chapter{System Configuration and Deployment Guide}
+\label{app:deployment}
 
-\textit{This chapter is under construction. See \texttt{PFE\_FINAL/02\_Research\_Design/thesis\_outline.md} for the planned content of this chapter.}
+\section*{Environment Specification}
 
+The complete Python dependency specification is available in \texttt{requirements.txt} in the project repository. Key pinned versions:
+
+\begin{lstlisting}[caption={Key dependency versions}]
+streamlit==1.28.2
+sentence-transformers==2.2.2
+faiss-cpu==1.7.4
+mcp==1.0.0
+msal==1.24.1
+pdfplumber==0.10.3
+python-docx==1.1.0
+llama-cpp-python==0.2.38
+httpx==0.25.2
+\end{lstlisting}
+
+\section*{Docker Compose Topology}
+
+\begin{lstlisting}[language=yaml, caption={Docker Compose service configuration (simplified)}]
+services:
+  mcp-server:
+    build: ./mcp_server
+    environment:
+      - FAISS_INDEX_PATH=/data/index
+      - CHUNK_STORE_PATH=/data/chunks.jsonl
+      - PERMISSION_MANIFEST=/data/permissions.json
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+
+  streamlit-app:
+    build: ./streamlit_app
+    environment:
+      - MCP_SERVER_URL=http://mcp-server:8080
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - MISTRAL_MODEL_PATH=/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+    depends_on:
+      - mcp-server
+    ports:
+      - "8501:8501"
+
+  ingestion-worker:
+    build: ./ingestion
+    environment:
+      - SHAREPOINT_SITE_URL=${SHAREPOINT_SITE_URL}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+    volumes:
+      - ./data:/data
+\end{lstlisting}
+
+\section*{Configuration Parameters}
+
+\begin{table}[H]
+\centering
+\caption{Tunable system configuration parameters}
+\begin{tabularx}{\textwidth}{@{}lXll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Description} & \textbf{Default} & \textbf{Range} \\
+\midrule
+\texttt{CHUNK\_SIZE\_TOKENS} & Target chunk size in tokens & 512 & 256--1024 \\
+\texttt{CHUNK\_OVERLAP\_TOKENS} & Overlap between adjacent chunks & 64 & 0--128 \\
+\texttt{RETRIEVAL\_K} & Over-retrieval candidates before ACL filter & 20 & 10--50 \\
+\texttt{RERANK\_TOP\_K} & Final context chunks after re-ranking & 5 & 3--10 \\
+\texttt{LLM\_TEMPERATURE} & Generation temperature & 0.1 & 0.0--0.5 \\
+\texttt{LLM\_MAX\_TOKENS} & Maximum generation length & 512 & 256--1024 \\
+\texttt{PERMISSION\_CACHE\_TTL} & User permission cache TTL (seconds) & 300 & 60--3600 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section*{Mistral 7B Model Provenance}
+
+Model: \texttt{mistral-7b-instruct-v0.2.Q4\_K\_M.gguf}\\
+Source: \texttt{TheBloke/Mistral-7B-Instruct-v0.2-GGUF} (Hugging Face)\\
+SHA-256: \texttt{[to be populated from actual download]}\\
+License: Apache 2.0
