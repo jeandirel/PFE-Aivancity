@@ -1,9 +1,386 @@
 %==============================================================================
-% CHAPTER_04 — PLACEHOLDER
-% TODO: Content to be written
+% CHAPTER 4 — SYSTEM DESIGN AND ARCHITECTURE
 %==============================================================================
-\chapter{[Title to be defined — see thesis\_outline.md]}
-\label{chap:chapter-04}
+\chapter{System Design and Architecture}
+\label{chap:architecture}
 
-\textit{This chapter is under construction. See \texttt{PFE\_FINAL/02\_Research\_Design/thesis\_outline.md} for the planned content of this chapter.}
+This chapter presents the design and architecture of AntiGravity --- the \gls{rag} conversational assistant developed as the primary artifact of this research. We adopt a systematic design methodology in which every architectural decision is explicitly motivated by functional or non-functional requirements, compared against credible alternatives, and justified on technical and scientific grounds. The chapter is organized from requirements through high-level architecture down to individual component design.
 
+%------------------------------------------------------------------------------
+\section{Requirements Analysis}
+\label{sec:arch-requirements}
+%------------------------------------------------------------------------------
+
+\subsection{Functional Requirements}
+
+\begin{table}[H]
+\centering
+\caption{Functional requirements of the AntiGravity system}
+\label{tab:functional-requirements}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{ID} & \textbf{Priority} & \textbf{Requirement} \\
+\midrule
+FR01 & Must & Accept natural language queries and return natural language responses \\
+FR02 & Must & Responses shall be grounded in documents retrieved from SharePoint CERP \\
+FR03 & Must & Every response shall include citations identifying the source documents \\
+FR04 & Must & Respect SharePoint ACLs: users receive only responses grounded in authorized documents \\
+FR05 & Must & Authenticate users via the organization's SSO provider \\
+FR06 & Must & Support PDF and DOCX document formats \\
+FR07 & Should & Support conversational context (multi-turn dialogue) \\
+FR08 & Should & Indicate when a query cannot be answered from the available corpus \\
+FR09 & Should & Allow users to provide feedback on response quality \\
+FR10 & Could & Support query routing to specialized sub-indexes by document category \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Non-Functional Requirements}
+
+\begin{table}[H]
+\centering
+\caption{Non-functional requirements and measurable acceptance criteria}
+\label{tab:nonfunctional-requirements}
+\begin{tabularx}{\textwidth}{@{}llXl@{}}
+\toprule
+\textbf{ID} & \textbf{Category} & \textbf{Requirement} & \textbf{Acceptance Criterion} \\
+\midrule
+NFR01 & Performance & End-to-end query response latency & P95 $\leq$ 5 seconds \\
+NFR02 & Performance & FAISS retrieval latency & $\leq$ 500ms for up to 100k chunks \\
+NFR03 & Security & Document access enforcement & Zero unauthorized document leakage \\
+NFR04 & Security & Authentication & OAuth 2.0 delegated permissions via Microsoft Entra ID \\
+NFR05 & Reliability & Availability & $\geq$ 99\% during business hours \\
+NFR06 & Scalability & Concurrent users & $\geq$ 50 concurrent users without degradation \\
+NFR07 & Maintainability & Component coupling & Each component replaceable independently \\
+NFR08 & Deployability & Network compatibility & Operational behind corporate proxy \\
+NFR09 & Compliance & Data locality & Document content not persisted outside the DNSI network perimeter \\
+NFR10 & Usability & Response quality & Faithfulness $\geq$ 0.85 on benchmark dataset \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+NFR04 (OAuth 2.0 delegated permissions) is the single most constraining non-functional requirement architecturally. It mandates that every SharePoint query execute under the authenticated user's token --- not an application-level service account --- ensuring that ACL enforcement is performed by SharePoint's own permission engine rather than by application logic that could be misconfigured or bypassed.
+
+%------------------------------------------------------------------------------
+\section{Architectural Approach and High-Level Design}
+\label{sec:arch-overview}
+%------------------------------------------------------------------------------
+
+\subsection{Design Principles}
+
+Three overarching design principles guide the AntiGravity architecture:
+
+\paragraph{Separation of concerns.} The context management layer (document storage, semantic indexing, ACL-aware retrieval) is fully separated from the conversational layer (query processing, context assembly, generation). This separation localizes the security-sensitive ACL enforcement logic in a single, auditable component --- the MCP Context Server.
+
+\paragraph{Protocol-mediated integration.} The interface between the conversational client and the context server is mediated exclusively through the Model Context Protocol, rather than through direct function calls or shared memory. This protocol boundary is the security enforcement point: no document context reaches the LLM without passing through the MCP server's permission filter.
+
+\paragraph{Replaceability of components.} Each component (embedding model, vector index, re-ranking model, LLM, data connector) is isolated behind a well-defined interface, enabling substitution without cascading architectural changes --- critical given the rapid evolution of the LLM ecosystem.
+
+\subsection{High-Level Architecture}
+
+The AntiGravity system comprises four architectural layers:
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.92\textwidth}{
+\begin{center}
+\textbf{LAYER 1 --- PRESENTATION}\\
+Streamlit Web Application (Python)\\
+Session management $\cdot$ Source citation display $\cdot$ Feedback collection
+\end{center}
+\vspace{0.2cm}\hrule\vspace{0.2cm}
+\begin{center}
+\textbf{LAYER 2 --- CONVERSATIONAL INTELLIGENCE}\\
+MCP Conversational Client\\
+Query classification $\cdot$ Context assembly $\cdot$ Re-ranking $\cdot$ Prompt engineering\\
+LLM Interface (Mistral 7B Instruct)
+\end{center}
+\vspace{0.2cm}\hrule\vspace{0.2cm}
+\begin{center}
+\textbf{LAYER 3 --- CONTEXT SERVER (MCP)}\\
+MCP Context Server\\
+ACL-filtered semantic search $\cdot$ FAISS index $\cdot$ Document store\\
+User session context $\cdot$ Permission enforcement
+\end{center}
+\vspace{0.2cm}\hrule\vspace{0.2cm}
+\begin{center}
+\textbf{LAYER 4 --- DATA SOURCES}\\
+SharePoint CERP (Microsoft Graph API $\cdot$ OAuth 2.0 $\cdot$ SSO)\\
+Document formats: PDF, DOCX
+\end{center}
+}}
+\caption{AntiGravity four-layer architecture overview}
+\label{fig:architecture-overview}
+\end{figure}
+
+The MCP boundary between Layers 2 and 3 is the key security enforcement point: no unauthorized document content is ever injected into the LLM prompt.
+
+%------------------------------------------------------------------------------
+\section{Data Ingestion and Pre-processing Pipeline}
+\label{sec:arch-ingestion}
+%------------------------------------------------------------------------------
+
+\subsection{Document Extraction from SharePoint}
+
+Document extraction from SharePoint is performed via the Microsoft Graph API using OAuth 2.0 application permissions for the ingestion pipeline (distinct from the delegated permissions used for query-time retrieval). The ingestion process runs offline during scheduled crawl windows.
+
+The extraction pipeline performs the following operations:
+
+\begin{enumerate}
+  \item \textbf{Enumerate document libraries:} The Graph API endpoint \texttt{/sites/\{site-id\}/drives} lists all libraries in the target SharePoint site collection.
+  \item \textbf{Traverse document hierarchies:} The \texttt{/drives/\{drive-id\}/root/children} endpoint recursively enumerates folders and files.
+  \item \textbf{Fetch document metadata:} For each document: file name, timestamps, author, parent path, SharePoint item ID, and permission list.
+  \item \textbf{Download document content:} Binary content is downloaded via \texttt{/drives/\{drive-id\}/items/\{item-id\}/content}.
+  \item \textbf{Permission manifest construction:} A manifest maps each SharePoint item ID to its set of authorized principals, accounting for inherited and explicitly-set permissions. This manifest is the foundation of the ACL enforcement mechanism.
+\end{enumerate}
+
+\subsection{Document Parsing}
+
+\paragraph{PDF processing.} PDF documents are parsed using \texttt{pdfplumber}, which provides layout-aware text extraction preserving table structures and column layouts. Pages with fewer than 50 extracted characters are flagged for review.
+
+\paragraph{DOCX processing.} DOCX documents are parsed using \texttt{python-docx}. Paragraph structure, heading hierarchy, and table content are extracted and preserved in chunk metadata.
+
+\paragraph{Encoding normalization.} All text is normalized to UTF-8, stripped of control characters, and quality-filtered: chunks with a character-to-token ratio below a threshold (indicating code, serialized data, or extraction artifacts) are excluded from indexing.
+
+\subsection{Chunking Strategy}
+\label{subsec:chunking}
+
+The chunking strategy is one of the most consequential decisions in a RAG pipeline. Three candidate strategies were evaluated:
+
+\begin{table}[H]
+\centering
+\caption{Comparison of chunking strategies evaluated}
+\label{tab:chunking-strategies}
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
+\toprule
+\textbf{Strategy} & \textbf{Description} & \textbf{Advantage} & \textbf{Disadvantage} \\
+\midrule
+Fixed-size (tokens) & Split at fixed token count & Simple; predictable window usage & Splits semantic units mid-content \\
+Sentence-aware & Split at sentence boundaries & Preserves semantic units & Variable chunk size; issues in technical text \\
+Recursive character & Split hierarchically: paragraphs $\to$ sentences $\to$ chars & Preserves structure; respects size & More complex \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Selected strategy: Recursive character splitting.} Target chunk size: \textbf{512 tokens}, overlap: \textbf{64 tokens}. This choice is justified by: (1) compatibility with the embedding model's context window; (2) the 64-token overlap prevents concepts spanning boundaries from losing their referent (an issue observed with zero-overlap in early experiments); (3) preliminary testing showed chunks below 256 tokens lacked sufficient context for meaningful embedding representations, while chunks above 1024 tokens reduced precision by bundling distinct concepts.
+
+Each chunk stores: document ID, SharePoint item ID, chunk index, character offset, file name, document title, section heading, last modified date, and the permission manifest entry for the parent document.
+
+%------------------------------------------------------------------------------
+\section{Vectorization and Semantic Indexing}
+\label{sec:arch-vectorization}
+%------------------------------------------------------------------------------
+
+\subsection{Embedding Model Selection}
+
+\begin{table}[H]
+\centering
+\caption{Embedding model trade-off analysis}
+\label{tab:embedding-models}
+\begin{tabularx}{\textwidth}{@{}lXllll@{}}
+\toprule
+\textbf{Model} & \textbf{Provider} & \textbf{Dim.} & \textbf{Latency} & \textbf{MTEB} & \textbf{Local} \\
+\midrule
+\texttt{all-MiniLM-L6-v2} & HuggingFace & 384 & $\sim$5ms & 56.3 & Yes \\
+\texttt{all-mpnet-base-v2} & HuggingFace & 768 & $\sim$25ms & 57.8 & Yes \\
+\texttt{text-embedding-ada-002} & OpenAI & 1536 & $\sim$100ms & 60.9 & No (API) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Selected: \texttt{all-mpnet-base-v2}.} The OpenAI \texttt{ada-002} model offers superior benchmark performance but was rejected on two grounds: (1) NFR09 prohibits transmitting document content to external APIs; (2) $\sim$100ms per-query latency would exceed the NFR01 budget under realistic load. \texttt{all-MiniLM-L6-v2} was rejected due to lower dimensionality and observed degradation on French-language technical text present in the DNSI corpus.
+
+\subsection{FAISS Index Construction}
+
+\paragraph{Selected: \texttt{IndexFlatIP} (Inner Product on L2-normalized vectors).} For the proof-of-concept corpus (under 50,000 chunks), exact search provides 100\% retrieval recall, eliminating precision loss from approximation. All embedding vectors are L2-normalized prior to indexing, making inner product equivalent to cosine similarity. At corpus sizes above 100,000 chunks, migration to \texttt{IndexIVFFlat} is warranted to maintain sub-500ms latency (NFR02).
+
+The index is built offline during ingestion and loaded into memory at server startup. Each build produces a versioned snapshot (timestamp + document count + SHA-256 of the chunk store) enabling rollback if a new build introduces regression.
+
+%------------------------------------------------------------------------------
+\section{The MCP Context Server}
+\label{sec:arch-mcp-server}
+%------------------------------------------------------------------------------
+
+\subsection{MCP Server Design}
+
+The MCP Context Server implements the MCP server specification \citep{Anthropic2024MCP} in Python, exposing three MCP capabilities:
+
+\begin{itemize}
+  \item \textbf{Resources:} The corpus as addressable document chunks (accessible by chunk ID).
+  \item \textbf{Tools:} A \texttt{search\_documents} tool accepting a query string and user token, returning ACL-filtered, re-ranked chunks.
+  \item \textbf{Prompts:} A \texttt{rag\_response} prompt template structuring context injection for the LLM generation step.
+\end{itemize}
+
+\subsection{ACL-Aware Retrieval}
+\label{subsec:acl-retrieval}
+
+The ACL enforcement mechanism operates in six steps:
+
+\begin{enumerate}
+  \item The MCP client sends a \texttt{search\_documents} tool call with the query text and user OAuth token.
+  \item The MCP server resolves the user's effective group membership via the Graph API \texttt{/me/transitiveMemberOf} endpoint.
+  \item The user's \textit{effective permission set} is constructed: the union of the user's direct identity and all group memberships.
+  \item FAISS retrieval returns the top-$K$ candidates ($K = 20$, before re-ranking to top-$k = 5$).
+  \item Each candidate chunk is matched against the permission manifest. Chunks whose parent document has no permission intersection with the user's effective permission set are removed.
+  \item Filtered candidates proceed to re-ranking.
+\end{enumerate}
+
+\paragraph{Security guarantee.} No unauthorized document content is ever injected into the LLM prompt or transmitted to the client. The MCP boundary enforces this structurally.
+
+\paragraph{Over-retrieval design.} The ratio $K/k = 4$ ensures the user receives $k = 5$ authorized results even when a significant fraction of top-$K$ candidates are permission-filtered. User group membership is session-cached with a 5-minute TTL to reduce authentication latency.
+
+\subsection{Context Window Management}
+
+The available context budget for document chunks is computed as:
+\begin{equation}
+  C_{\text{docs}} = C_{\text{model}} - C_{\text{system}} - C_{\text{query}} - C_{\text{margin}}
+  \label{eq:context-budget}
+\end{equation}
+where $C_{\text{model}} = 4096$ tokens (Mistral 7B), $C_{\text{system}} \approx 150$ tokens, $C_{\text{query}} \leq 512$ tokens, $C_{\text{margin}} = 128$ tokens. Typical available budget: $\approx 3300$ tokens (6--7 chunks at 512 tokens each).
+
+%------------------------------------------------------------------------------
+\section{Query Processing and Re-ranking}
+\label{sec:arch-query}
+%------------------------------------------------------------------------------
+
+\subsection{Query Classification}
+
+Incoming queries are classified along two dimensions:
+
+\paragraph{Answerability.} Queries are classified as \textit{in-scope}, \textit{out-of-scope}, or \textit{ambiguous} using Mistral 7B zero-shot classification. Out-of-scope queries receive a graceful refusal (FR08) without entering the retrieval pipeline.
+
+\paragraph{Complexity.} Queries are classified as \textit{factoid}, \textit{multi-hop}, or \textit{procedural}. This adjusts the retrieval parameter $K$ (factoid: 10; multi-hop: 20; procedural: 15) and re-ranking strategy.
+
+\subsection{Re-ranking}
+\label{subsec:reranking}
+
+\paragraph{Selected: \texttt{cross-encoder/ms-marco-MiniLM-L-6-v2}.} This cross-encoder re-scorer is applied to the top-$K$ ACL-filtered candidates, reordering them by joint (query, passage) relevance score. At 512-token chunks and batch size 20, re-ranking latency is approximately 200--400ms on CPU, within the NFR01 budget. The precision improvement from re-ranking is empirically validated in Chapter~\ref{chap:evaluation}.
+
+%------------------------------------------------------------------------------
+\section{Generation Pipeline}
+\label{sec:arch-generation}
+%------------------------------------------------------------------------------
+
+\subsection{Language Model Selection}
+
+\textbf{Mistral 7B Instruct} \citep{Jiang2023} was selected for three reasons: (1) competitive instruction-following performance at a deployable model size; (2) on-premises deployment satisfying NFR09; (3) stronger French-language capability than comparable English-centric models, relevant for the DNSI corpus.
+
+Commercial API-only models (GPT-4, Claude) were evaluated but rejected on NFR09 grounds: their inference requires transmitting document content to external servers.
+
+\subsection{Prompt Engineering}
+\label{subsec:prompt-engineering}
+
+The prompt template follows a four-part structure designed to minimize hallucination:
+
+\begin{verbatim}
+[SYSTEM PROMPT]
+You are AntiGravity, a precise document assistant for the DNSI.
+Answer questions ONLY using the provided document excerpts.
+If the answer is not found, state: "I could not find this
+information in the available documents."
+Always cite the source document: [Source: <title>].
+Do not invent, extrapolate, or use external knowledge.
+
+[CONTEXT BLOCK]
+Document 1: [Title] | [Date] | [Section]
+<chunk text>
+... (up to context budget)
+
+[CONVERSATION HISTORY]
+<previous turns>
+
+[QUERY]
+User: <current query>
+Assistant:
+\end{verbatim}
+
+Three hallucination-reduction mechanisms are embedded in the system prompt: (1) explicit scope restriction to retrieved content; (2) explicit refusal template for unanswerable queries; (3) mandatory source citation for every factual claim.
+
+Generation parameters: temperature=0.1, top\_p=0.9, max\_new\_tokens=512, repetition\_penalty=1.1.
+
+%------------------------------------------------------------------------------
+\section{Security Architecture}
+\label{sec:arch-security}
+%------------------------------------------------------------------------------
+
+\subsection{Authentication Flow}
+
+OAuth 2.0 Authorization Code flow with PKCE, against Microsoft Entra ID:
+\begin{enumerate}
+  \item User is redirected to Entra ID login (supporting MFA per organization policy).
+  \item Entra ID returns an authorization code; the application exchanges it for a delegated access token (\texttt{Sites.Read.All}, \texttt{Files.Read.All}).
+  \item The access token is stored server-side in the user's session; never transmitted to the client browser.
+  \item All SharePoint operations use this delegated token, inheriting the user's exact permissions.
+\end{enumerate}
+
+\subsection{Threat Model}
+
+\begin{table}[H]
+\centering
+\caption{AntiGravity threat model}
+\label{tab:threat-model}
+\begin{tabularx}{\textwidth}{@{}lXXl@{}}
+\toprule
+\textbf{Threat} & \textbf{Description} & \textbf{Mitigation} & \textbf{Risk} \\
+\midrule
+Unauthorized data access & User receives content from unauthorized documents & ACL enforcement at retrieval layer; delegated OAuth tokens & Low \\
+Prompt injection via document & Adversarial document content manipulates LLM & System prompt reinforcement; output sanitization & Medium \\
+Session hijacking & Attacker obtains another user's session token & HTTPS-only; server-side token storage; 1-hour TTL & Low \\
+Model output XSS & LLM generates active content & Streamlit HTML escaping; response post-processing & Low \\
+Data exfiltration via LLM & Confidential content transmitted to external APIs & No training; inference only; on-premises model (NFR09) & Low \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The residual prompt injection risk (Medium) is the most significant security limitation and is discussed critically in Chapter~\ref{chap:discussion}.
+
+%------------------------------------------------------------------------------
+\section{Deployment Architecture}
+\label{sec:arch-deployment}
+%------------------------------------------------------------------------------
+
+The system deploys as three containerized services:
+
+\begin{itemize}
+  \item \textbf{Ingestion Worker:} Scheduled nightly job that crawls SharePoint, processes documents, and rebuilds the FAISS index and permission manifest.
+  \item \textbf{MCP Context Server:} Always-on service exposing MCP over HTTP/SSE transport with the FAISS index resident in memory.
+  \item \textbf{Streamlit Application:} User-facing web application embedding the MCP client and LLM inference client.
+\end{itemize}
+
+\paragraph{Corporate proxy.} The DNSI's TLS-terminating proxy required configuring all HTTP clients with the proxy certificate in their trust stores, a proxy bypass list for internal service communication, and on-premises Mistral AI deployment to eliminate external API dependencies.
+
+%------------------------------------------------------------------------------
+\section{Design Decisions Summary}
+\label{sec:arch-decisions}
+%------------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Key architectural design decisions with justification}
+\label{tab:design-decisions}
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
+\toprule
+\textbf{Decision} & \textbf{Chosen} & \textbf{Alternative(s)} & \textbf{Justification} \\
+\midrule
+Integration protocol & MCP & Direct Graph API; LangChain & Standardization; security boundary; connector reuse \\
+Embedding model & \texttt{all-mpnet-base-v2} & \texttt{ada-002}; \texttt{MiniLM} & Data locality (NFR09); French support; quality/latency \\
+Vector index & FAISS IndexFlatIP & IndexIVFFlat; Pinecone & Exact recall at PoC scale; no external service \\
+Chunking & Recursive char 512T/64T & Fixed-size; sentence-aware & Semantic boundary preservation; window compatibility \\
+Re-ranking & MS-MARCO cross-encoder & No re-ranking; ColBERT & Precision improvement within latency budget \\
+Language model & Mistral 7B Instruct & GPT-4; Llama 2 & Data locality; French support; performance/size \\
+ACL enforcement & At retrieval (MCP server) & At display layer & Security correctness; no leakage at any stage \\
+Auth & OAuth 2.0 delegated PKCE & Service account & Required for per-user ACL; Entra ID compatibility \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Chapter Summary}
+\label{sec:arch-summary}
+%------------------------------------------------------------------------------
+
+This chapter has presented the complete design and architecture of AntiGravity. The four-layer architecture separates presentation, conversational intelligence, context management, and data access concerns. The MCP Context Server is the structural security enforcement point, ensuring ACL verification occurs at the data boundary. Every major design decision has been documented with alternatives and justification.
+
+Three architectural innovations relative to the state of the art are: (1) structural ACL enforcement within the MCP server boundary, eliminating entire classes of access control bypass; (2) MCP as the protocol layer between AI reasoning and data access, providing security enforcement and connector reuse; (3) the over-retrieval design pattern ($K = 20 \to k = 5$ post-filter) maintaining retrieval completeness under restrictive permission environments.
+
+The following chapter describes the technical implementation of this architecture.
