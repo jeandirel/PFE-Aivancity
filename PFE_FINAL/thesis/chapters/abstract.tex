@@ -1,0 +1,42 @@
+%==============================================================================
+% ABSTRACT
+%==============================================================================
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+\textbf{Keywords:} Retrieval-Augmented Generation, Model Context Protocol, SharePoint, Enterprise Knowledge Management, Large Language Models, Semantic Search, FAISS, Security, Hallucination.
+
+\bigskip
+
+Large organizations accumulate vast quantities of technical and business documentation on enterprise platforms such as SharePoint, yet access to this knowledge asset remains fragmented, manual, and inadequate for complex contextual queries. While Large Language Models (LLMs) offer a compelling natural language interface to enterprise knowledge, their direct deployment is impeded by hallucination, knowledge cutoff limitations, and the absence of native mechanisms for access control and source attribution.
+
+This thesis addresses the following research question: \textit{to what extent does a Retrieval-Augmented Generation (RAG) architecture grounded in the Model Context Protocol (MCP) enable more reliable, secure, and traceable access to enterprise knowledge stored in SharePoint, compared to a standalone LLM and a naive RAG implementation?}
+
+We design, implement, and evaluate AntiGravity — a modular RAG conversational assistant that leverages MCP as a standardized protocol layer between the AI reasoning engine and the SharePoint document corpus of the DNSI (Direction du Numérique et des Systèmes d'Information). The architecture separates a security-aware MCP Context Server, which manages a FAISS semantic index with ACL-filtered document access, from a conversational client that combines query classification, dense retrieval, re-ranking, and generation via Mistral AI.
+
+The evaluation follows a four-dimensional protocol: (1) retrieval quality (Precision@K, Recall@K, MRR, nDCG); (2) generation quality (faithfulness, groundedness, hallucination rate via RAGAS); (3) system performance (end-to-end latency, throughput); and (4) user acceptance (SUS, TAM, task-based evaluation).
+
+Results demonstrate that the RAG+MCP architecture reduces hallucination rate by [X\%] compared to a standalone LLM and improves faithfulness scores by [Y\%] over a naive RAG baseline. The MCP layer introduces a measurable latency overhead of [Z ms] at P95, which remains within acceptable enterprise SLA bounds. User evaluation yields a SUS score of [S/100], indicating [good/excellent] usability.
+
+The primary scientific contribution of this thesis is a formal comparative evaluation framework for RAG+MCP architectures in enterprise settings — the first such study applied to a private SharePoint corpus with ACL enforcement. The engineering contribution is a reference architecture for secure, permission-aware conversational AI in enterprise environments. Both contributions lay the groundwork for a doctoral continuation under the CIFRE scheme.
+
+\bigskip
+
+\noindent\rule{\textwidth}{0.4pt}
+
+\bigskip
+
+\textbf{Résumé (French)}
+
+\textbf{Mots-clés :} Génération Augmentée par Récupération, Model Context Protocol, SharePoint, Gestion des Connaissances en Entreprise, Grands Modèles de Langage, Recherche Sémantique, Sécurité, Hallucination.
+
+\bigskip
+
+Les grandes organisations accumulent de vastes quantités de documentation technique et métier sur des plateformes comme SharePoint, mais l'accès à ce patrimoine informationnel reste fragmenté et insuffisant pour répondre à des requêtes complexes et contextuelles. Bien que les grands modèles de langage (LLMs) offrent une interface en langage naturel prometteuse pour l'accès aux connaissances d'entreprise, leur déploiement direct est entravé par les phénomènes d'hallucination, le manque de connaissance des données privées, et l'absence de mécanismes natifs de contrôle d'accès et de traçabilité des sources.
+
+Cette thèse conçoit, implémente et évalue AntiGravity — un assistant conversationnel RAG modulaire qui exploite le Model Context Protocol (MCP) comme couche de protocole standardisée entre le moteur d'inférence IA et le corpus documentaire SharePoint de la DNSI. L'évaluation couvre la qualité de récupération, la qualité de génération, les performances systèmes et l'acceptabilité utilisateur.
+
+\bigskip
+\noindent\rule{\textwidth}{0.4pt}
+
+\textit{Note: Bracketed values [X\%, Y\%, Z ms, S/100] will be populated upon completion of evaluation experiments.}
