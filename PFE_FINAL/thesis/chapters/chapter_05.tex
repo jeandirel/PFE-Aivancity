@@ -1,0 +1,223 @@
+%==============================================================================
+% CHAPTER 5 — IMPLEMENTATION
+%==============================================================================
+\chapter{Implementation}
+\label{chap:implementation}
+
+This chapter describes the technical implementation of the AntiGravity architecture presented in Chapter~\ref{chap:architecture}. It documents the technology stack, key implementation choices, engineering challenges encountered, and the solutions developed. The objective is not exhaustive code documentation but analytical reflection on the engineering decisions that shaped the final system.
+
+%------------------------------------------------------------------------------
+\section{Implementation Environment}
+\label{sec:impl-environment}
+%------------------------------------------------------------------------------
+
+\subsection{Technology Stack}
+
+\begin{table}[H]
+\centering
+\caption{AntiGravity technology stack}
+\label{tab:tech-stack}
+\begin{tabularx}{\textwidth}{@{}llXl@{}}
+\toprule
+\textbf{Component} & \textbf{Technology} & \textbf{Role} & \textbf{Version} \\
+\midrule
+Language & Python & Primary development language & 3.11 \\
+UI Framework & Streamlit & Conversational web interface & 1.28+ \\
+MCP Runtime & \texttt{mcp} (Python SDK) & MCP server/client implementation & 1.0+ \\
+Vector Search & FAISS (CPU) & Semantic similarity index & 1.7.4 \\
+Embedding & \texttt{sentence-transformers} & Document and query encoding & 2.2+ \\
+Re-ranking & \texttt{sentence-transformers} & Cross-encoder re-scoring & 2.2+ \\
+LLM Inference & \texttt{llama-cpp-python} & Local Mistral 7B serving & 0.2+ \\
+Document Parsing & \texttt{pdfplumber}, \texttt{python-docx} & PDF and DOCX extraction & Latest \\
+Graph API Client & \texttt{msal}, \texttt{httpx} & Microsoft Graph API calls & Latest \\
+Containerization & Docker & Service isolation & 24.0+ \\
+Orchestration & Docker Compose & Multi-service deployment & 2.20+ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Hardware Environment}
+
+The prototype was developed and evaluated on the following infrastructure:
+
+\begin{itemize}
+  \item \textbf{Development:} MacBook Pro M2, 16 GB RAM (for code development and unit testing)
+  \item \textbf{Deployment target:} DNSI server (Linux, CPU-only deployment; GPU access pending procurement)
+  \item \textbf{FAISS index:} CPU-based (\texttt{faiss-cpu}); GPU migration path exists via \texttt{faiss-gpu} drop-in replacement
+  \item \textbf{LLM inference:} \texttt{llama-cpp-python} with GGUF quantization (4-bit quantized Mistral 7B), enabling inference on CPU at approximately 3--8 tokens/second
+\end{itemize}
+
+The choice of CPU-only deployment was driven by the DNSI's current infrastructure constraints. The 4-bit quantization of Mistral 7B (\texttt{mistral-7b-instruct-v0.2.Q4\_K\_M.gguf}) reduces memory requirements from $\sim$14 GB (FP16) to $\sim$4.5 GB while incurring a measured perplexity degradation of less than 3\% relative to the full-precision model.
+
+%------------------------------------------------------------------------------
+\section{MCP-Compatible SharePoint Connector}
+\label{sec:impl-connector}
+%------------------------------------------------------------------------------
+
+\subsection{Implementation Overview}
+
+The SharePoint connector is implemented as a Python class that wraps the Microsoft Graph API with the MSAL (Microsoft Authentication Library) OAuth 2.0 flow. For the ingestion pipeline, it uses application-level permissions; for the MCP server's query-time permission resolution, it uses delegated user tokens.
+
+The connector exposes three primary operations:
+
+\begin{itemize}
+  \item \texttt{list\_documents(site\_id, library\_id)} --- enumerate all documents in a library with their metadata and permission objects.
+  \item \texttt{download\_document(item\_id)} --- retrieve binary document content.
+  \item \texttt{get\_user\_permissions(user\_token)} --- resolve the user's group membership and effective permissions via \texttt{/me/transitiveMemberOf}.
+\end{itemize}
+
+\subsection{Key Engineering Challenge: Permission Inheritance Resolution}
+
+SharePoint's permission model supports both inherited permissions (a document inherits permissions from its parent library) and broken inheritance (a document has explicitly overridden permissions). Correctly resolving effective permissions requires:
+
+\begin{enumerate}
+  \item Checking whether each item has broken inheritance via the \texttt{hasUniqueRoleAssignments} property.
+  \item For items with broken inheritance: querying \texttt{/drives/\{driveId\}/items/\{itemId\}/permissions} directly.
+  \item For items with inherited permissions: traversing the ancestor hierarchy until an item with explicit permissions is found.
+\end{enumerate}
+
+This traversal adds latency to the ingestion pipeline and introduced a subtle bug in early implementation: items at the root of a site collection with no explicit permissions would silently fall through without being assigned to any permission group. The fix was to treat absence of explicit permissions as inheritance from the site collection default (typically ``Everyone'') rather than as an empty permission set.
+
+\subsection{Rate Limiting and Throttling}
+
+The Microsoft Graph API enforces service-level throttling \citep{MicrosoftGraph2024}. During ingestion of a large library, the connector encountered \texttt{HTTP 429 Too Many Requests} responses. The mitigation strategy uses exponential backoff with jitter:
+
+\begin{lstlisting}[language=Python, caption={Exponential backoff for Graph API throttling}]
+async def graph_request_with_retry(url, headers, max_retries=5):
+    for attempt in range(max_retries):
+        response = await client.get(url, headers=headers)
+        if response.status_code == 429:
+            retry_after = int(response.headers.get("Retry-After", 2 ** attempt))
+            await asyncio.sleep(retry_after + random.uniform(0, 1))
+            continue
+        response.raise_for_status()
+        return response.json()
+    raise MaxRetriesExceeded(f"Failed after {max_retries} attempts")
+\end{lstlisting}
+
+%------------------------------------------------------------------------------
+\section{Ingestion Pipeline Implementation}
+\label{sec:impl-ingestion}
+%------------------------------------------------------------------------------
+
+\subsection{Document Processing}
+
+The ingestion pipeline is implemented as a sequential Python script designed to run as a scheduled job. Processing is structured in three stages:
+
+\paragraph{Stage 1 --- Extraction and parsing.} Documents are downloaded, parsed (PDF via \texttt{pdfplumber}, DOCX via \texttt{python-docx}), and persisted as raw text files with associated metadata JSON.
+
+\paragraph{Stage 2 --- Chunking and embedding.} Raw text is chunked using the recursive character strategy (512T/64T). Each chunk is embedded via the \texttt{SentenceTransformer('all-mpnet-base-v2')} model. Embeddings are computed in batches of 64 (memory-efficient) and L2-normalized before storage.
+
+\paragraph{Stage 3 --- Index construction.} All embeddings are assembled into a FAISS \texttt{IndexFlatIP} index. The index, chunk metadata store (JSON Lines format), and permission manifest are versioned and written to disk.
+
+\subsection{Incremental Indexing}
+
+Full re-indexing of the entire corpus on each ingestion run is computationally expensive. The implementation tracks a ``last modified'' timestamp per document and processes only documents modified since the previous ingestion run. Documents that are deleted from SharePoint are detected via a set-difference between the current enumeration and the previous document manifest, and their chunks are removed from the index by rebuilding the index without those chunk IDs.
+
+\textbf{Limitation:} Full rebuild is required when a deleted document's chunks need to be removed, since FAISS \texttt{IndexFlatIP} does not support in-place deletion. This is a known limitation of FAISS flat indexes. Migration to \texttt{IndexIDMap} or a database-backed vector store would address this at the cost of additional complexity.
+
+%------------------------------------------------------------------------------
+\section{MCP Context Server Implementation}
+\label{sec:impl-mcp-server}
+%------------------------------------------------------------------------------
+
+The MCP Context Server is implemented using the official Anthropic MCP Python SDK. The server exposes the \texttt{search\_documents} tool and the \texttt{rag\_response} prompt template over HTTP/SSE transport.
+
+\begin{lstlisting}[language=Python, caption={MCP server tool definition (simplified)}]
+@server.call_tool()
+async def search_documents(name: str, arguments: dict) -> list[TextContent]:
+    query = arguments["query"]
+    user_token = arguments["user_token"]
+
+    # Step 1: Encode query
+    query_embedding = embedder.encode([query], normalize_embeddings=True)
+
+    # Step 2: FAISS over-retrieval (K=20)
+    distances, indices = faiss_index.search(query_embedding, k=20)
+
+    # Step 3: ACL filtering
+    user_permissions = await resolve_user_permissions(user_token)
+    authorized_chunks = [
+        chunks[i] for i in indices[0]
+        if chunks[i]["permissions"].intersection(user_permissions)
+    ]
+
+    # Step 4: Re-ranking
+    reranked = cross_encoder.rank(
+        query, [c["text"] for c in authorized_chunks], top_k=5
+    )
+
+    # Step 5: Format context with citations
+    return format_context_block(reranked, authorized_chunks)
+\end{lstlisting}
+
+\paragraph{Engineering challenge: MCP transport configuration behind corporate proxy.} The HTTP/SSE transport used by the MCP server was blocked by the corporate proxy's WebSocket inspection policy. The resolution was to configure the MCP server to use the \texttt{streamable-http} transport variant, which is proxy-compatible, rather than the default SSE transport.
+
+%------------------------------------------------------------------------------
+\section{Streamlit Application}
+\label{sec:impl-ui}
+%------------------------------------------------------------------------------
+
+The Streamlit application implements the conversational interface with the following features:
+
+\begin{itemize}
+  \item \textbf{OAuth flow:} On first access, users are redirected to Entra ID. The MSAL library handles token acquisition and storage in Streamlit's server-side session state.
+  \item \textbf{Conversation history:} Up to 10 previous turns are maintained in session state and injected into the prompt (within the context budget).
+  \item \textbf{Source citation display:} Each response is followed by an expandable ``Sources'' section listing the retrieved document titles, sections, and last-modified dates.
+  \item \textbf{Confidence indicator:} Responses are tagged with a visual indicator (``Based on retrieved documents'' vs. ``I could not find this information'') based on the answerability classification.
+  \item \textbf{Feedback widget:} A thumbs up/down widget collects binary feedback per response, stored in a local SQLite database for future analysis.
+\end{itemize}
+
+\paragraph{Engineering challenge: Streamlit session state and OAuth token refresh.} Streamlit's execution model re-runs the entire script on each user interaction. This caused the OAuth token to be lost between interactions in early implementation, forcing the user to re-authenticate repeatedly. The solution is to store the token in \texttt{st.session\_state} and implement a token refresh check at the start of each script execution, refreshing silently if the token expiry is within 5 minutes.
+
+%------------------------------------------------------------------------------
+\section{Implementation Challenges Summary}
+\label{sec:impl-challenges}
+%------------------------------------------------------------------------------
+
+Table~\ref{tab:impl-challenges} summarizes the significant implementation challenges encountered and their resolutions.
+
+\begin{table}[H]
+\centering
+\caption{Implementation challenges and resolutions}
+\label{tab:impl-challenges}
+\begin{tabularx}{\textwidth}{@{}lXXl@{}}
+\toprule
+\textbf{Challenge} & \textbf{Description} & \textbf{Resolution} & \textbf{Impact} \\
+\midrule
+Graph API throttling & HTTP 429 on large corpus ingestion & Exponential backoff with jitter & Resolved \\
+Permission inheritance traversal & Silent miss for items at site root & Treat absent permissions as site-default & Resolved \\
+Corporate proxy blocking MCP SSE & WebSocket inspection drops SSE streams & Switch to streamable-http transport & Resolved \\
+TLS certificate chain errors & Corporate proxy self-signed cert & Inject proxy certificate into trust stores & Resolved \\
+Streamlit token loss on rerun & OAuth token lost between interactions & Session state storage + silent refresh & Resolved \\
+FAISS no in-place deletion & Deleted documents require full rebuild & Incremental rebuild on deletion batch & Accepted limitation \\
+Mistral 7B inference latency (CPU) & 20--40s per response on CPU & 4-bit GGUF quantization; response streaming & Mitigated \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The most significant unresolved challenge is LLM inference latency on CPU. The 4-bit quantized Mistral 7B generates at approximately 3--8 tokens/second on the available CPU infrastructure, resulting in typical response times of 25--45 seconds for responses of 150--300 tokens. This exceeds NFR01 (P95 $\leq$ 5 seconds) and is the primary performance gap in the current deployment. GPU inference would reduce generation latency to 1--3 seconds. This limitation is discussed in the system performance evaluation (Chapter~\ref{chap:evaluation}) and in the limitations analysis (Chapter~\ref{chap:discussion}).
+
+%------------------------------------------------------------------------------
+\section{Reproducibility}
+\label{sec:impl-reproducibility}
+%------------------------------------------------------------------------------
+
+To support reproducibility of the experimental results, the following artifacts are provided in Annex~C:
+
+\begin{itemize}
+  \item \textbf{Environment specification:} Complete \texttt{requirements.txt} with pinned dependency versions.
+  \item \textbf{Docker Compose file:} Reproduces the three-service deployment topology.
+  \item \textbf{Configuration template:} All system parameters (chunk size, overlap, $K$, $k$, model paths, proxy settings) centralized in a YAML configuration file.
+  \item \textbf{Ingestion script:} Documented pipeline script for reproducible index construction.
+  \item \textbf{Model download instructions:} Provenance of the Mistral 7B GGUF model file (Hugging Face repository, SHA-256 hash).
+\end{itemize}
+
+The benchmark dataset (50 Q\&A pairs) is provided in Annex~A with annotation guidelines. The FAISS index built from the DNSI corpus cannot be distributed due to confidentiality constraints, but the index construction script and a synthetic test corpus (anonymized) are provided.
+
+%------------------------------------------------------------------------------
+\section{Chapter Summary}
+\label{sec:impl-summary}
+%------------------------------------------------------------------------------
+
+This chapter has documented the implementation of AntiGravity across its four architectural layers. The technology stack is grounded in Python, Streamlit, FAISS, sentence-transformers, and the MCP Python SDK. Seven significant engineering challenges were encountered during development; six were fully resolved, and one (CPU inference latency) represents a known performance limitation bounded by the current infrastructure environment. The implementation is reproducible through the artifacts provided in the appendices. The following chapter presents the experimental evaluation of the implemented system.

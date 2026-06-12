@@ -1,0 +1,135 @@
+%==============================================================================
+% CHAPTER 1 — INTRODUCTION
+%==============================================================================
+\chapter{Introduction}
+\label{chap:introduction}
+
+%------------------------------------------------------------------------------
+\section{General Context: The Enterprise Knowledge Access Problem}
+\label{sec:intro-context}
+%------------------------------------------------------------------------------
+
+The digitalization of organizational processes has generated an unprecedented volume of business documentation. Technical specifications, procedural guides, project reports, regulatory frameworks, meeting minutes, and operational manuals accumulate continuously on enterprise collaborative platforms. This documentation represents an organization's collective intelligence — the crystallization of years of expertise, decision history, and operational knowledge. Yet despite the theoretical availability of this knowledge, organizations consistently struggle to translate \textit{stored} information into \textit{accessible} information.
+
+The symptoms of this gap are well documented in the enterprise knowledge management literature \citep{Alavi2001, Davenport1998}. Employees spend a disproportionate fraction of their working time searching for information rather than using it. Complex queries — those requiring synthesis across multiple documents, historical context, or domain-specific reasoning — are particularly poorly served by conventional search interfaces. The result is what \citet{Davenport1998} term \textit{knowledge friction}: the resistance that organizational structures, technical interfaces, and information architectures impose between the knowledge that exists and the knowledge that can be practically applied.
+
+Microsoft SharePoint, the enterprise content management platform used by over 200 million users globally \citep{Microsoft2024}, is a paradigmatic example of this tension. SharePoint provides robust document storage, versioning, and access control capabilities, but its search functionality is fundamentally lexical: it matches keywords without understanding intent, context, or semantic proximity. A user querying "what are the security requirements for deploying a new application?" may receive thousands of matching documents, ranked by keyword frequency, with no mechanism for synthesizing a coherent, sourced answer across the relevant subset.
+
+This thesis originates in a concrete instantiation of this problem. The \gls{dnsi} — the information systems directorate of a large organization — maintains an extensive documentation corpus on its SharePoint platform (SharePoint \gls{cerp}). This corpus includes technical architecture documents, security policies, operational procedures, and project deliverables. Business units within the DNSI face daily challenges in locating, interpreting, and synthesizing information from this corpus, a friction that imposes measurable operational and decision-making costs.
+
+%------------------------------------------------------------------------------
+\section{The Promise and Limits of Large Language Models}
+\label{sec:intro-llm}
+%------------------------------------------------------------------------------
+
+The emergence of Large Language Models — neural architectures trained on massive corpora to generate coherent, contextually appropriate text \citep{Brown2020, Chowdhery2022} — has opened a fundamentally new interface for knowledge access. An LLM can, in principle, receive a natural language query and produce a synthesized, readable, and structurally coherent response that directly addresses the user's need, without requiring the user to formulate Boolean search expressions or manually read through ranked document lists.
+
+The practical deployment of LLMs in enterprise environments, however, is blocked by three fundamental and interdependent limitations:
+
+\paragraph{Hallucination.} LLMs are generative models trained to produce plausible continuations of text, not to retrieve verified facts. They will generate confident, fluent responses that are factually incorrect — a phenomenon termed hallucination \citep{Maynez2020, Ji2023}. In a consumer context, this is problematic. In an enterprise context, where responses may inform operational decisions, security configurations, or regulatory compliance positions, it is unacceptable.
+
+\paragraph{Knowledge Cutoff and Private Data.} LLMs are trained on static snapshots of public data up to a fixed point in time. They have no knowledge of an organization's private documentation, internal processes, post-training events, or domain-specific terminology. A model trained on public internet data cannot answer questions about the DNSI's internal security policy, because that policy was never in its training corpus. This is not a solvable problem through better model training — it is structural.
+
+\paragraph{Traceability and Access Control.} Enterprise environments require that responses be attributable to specific, authoritative sources, and that access to sensitive documentation be governed by the organizational permission model. A standalone LLM provides neither: it generates responses without citing sources, and it applies no access control — the same model, with the same weights, would generate the same response regardless of whether the querying user is authorized to access the underlying information.
+
+These three limitations converge to make direct LLM deployment in enterprise knowledge management contexts not merely suboptimal but operationally and legally untenable in most regulated environments.
+
+%------------------------------------------------------------------------------
+\section{Retrieval-Augmented Generation as a Paradigm Shift}
+\label{sec:intro-rag}
+%------------------------------------------------------------------------------
+
+The Retrieval-Augmented Generation paradigm, introduced by \citet{Lewis2020} at NeurIPS 2020, offers a compelling architectural response to these limitations. Rather than relying exclusively on the parametric knowledge encoded in model weights, \gls{rag} retrieves relevant documents from an external knowledge base at query time, injects them as context into the LLM's input, and uses the model to synthesize a response grounded in the retrieved evidence.
+
+This architectural choice addresses all three limitations simultaneously: the model's response is constrained by the retrieved context (reducing hallucination), the knowledge base can be populated with private, up-to-date organizational documents (addressing the knowledge cutoff), and the retrieval step can be restricted to documents the querying user is authorized to access (enforcing access control). Importantly, the knowledge base can be updated without retraining the model — a critical operational advantage in dynamic organizational environments where documentation evolves continuously.
+
+Since Lewis et al.'s foundational work, the RAG paradigm has matured rapidly. \citet{Gao2024} survey over 100 RAG variants across three evolutionary generations: naive RAG (direct retrieval and generation), advanced RAG (pre-retrieval query optimization and post-retrieval reranking), and modular RAG (flexible pipeline architectures with specialized components for specific use cases). Each generation addresses limitations of the previous through increasingly sophisticated retrieval, context management, and generation strategies.
+
+Despite this maturity at the architectural level, a critical infrastructure challenge remains largely unsolved: the problem of the data connector. Enterprise knowledge is stored in heterogeneous, siloed systems — SharePoint, Confluence, SAP, internal databases, email archives — each with its own API, authentication model, document format, and permission structure. Integrating RAG pipelines with these sources has historically required bespoke, hard-to-maintain connectors that introduce significant engineering overhead and security risk. This integration problem is the immediate motivation for the Model Context Protocol.
+
+%------------------------------------------------------------------------------
+\section{The Model Context Protocol: Standardizing the AI-Data Interface}
+\label{sec:intro-mcp}
+%------------------------------------------------------------------------------
+
+In November 2024, Anthropic published the specification for the Model Context Protocol (MCP) \citep{Anthropic2024MCP} — an open standard designed to formalize the interface between AI reasoning systems and external data sources. MCP defines a JSON-RPC-based protocol through which AI clients can discover, connect to, and query data providers (MCP servers) through a unified, standardized interface, regardless of the underlying data source's native API.
+
+The architectural significance of MCP is the introduction of a stable abstraction layer between the AI layer and the data layer. Before MCP, connecting an AI assistant to SharePoint required writing SharePoint-specific code directly in the AI pipeline — code that couples the pipeline to SharePoint's API versioning, authentication changes, and structural evolution. With MCP, the SharePoint-specific logic is encapsulated in an MCP server, and the AI pipeline communicates through the stable MCP protocol. Changes in the SharePoint API require only updating the MCP server, not the AI pipeline. This separation of concerns is architecturally analogous to the role ODBC played in standardizing database connectivity in the 1990s.
+
+Beyond maintainability, MCP's architecture introduces properties particularly relevant to enterprise environments: the server-side context management allows access control to be enforced at the data boundary (before context is passed to the AI model), making permission enforcement structural rather than advisory. The protocol's tool-calling semantics also enable richer interactions than simple document retrieval — an MCP server can expose structured operations (search, filter, navigate document hierarchies) that a naive retrieval connector cannot.
+
+However, MCP is a recent standard. Its practical value in production enterprise deployments — particularly regarding the claimed benefits of security, interoperability, and maintainability — has not yet been rigorously evaluated in a published academic study. This empirical gap constitutes the primary scientific motivation for this thesis.
+
+%------------------------------------------------------------------------------
+\section{Research Problem and Questions}
+\label{sec:intro-problem}
+%------------------------------------------------------------------------------
+
+The preceding analysis converges on the following primary research question:
+
+\begin{quote}
+\textbf{RQ1 (Primary):} \textit{To what extent does a Retrieval-Augmented Generation architecture grounded in the Model Context Protocol enable more reliable, secure, and traceable access to enterprise knowledge stored in SharePoint, compared to a standalone LLM and a naive RAG implementation?}
+\end{quote}
+
+This primary question is operationalized through four subsidiary research questions:
+
+\begin{itemize}
+  \item \textbf{RQ2 (Retrieval):} What retrieval configuration (chunking strategy, embedding model, similarity metric, re-ranking approach) maximizes retrieval precision and recall on a domain-specific SharePoint document corpus?
+
+  \item \textbf{RQ3 (Protocol):} What specific security, interoperability, and maintainability properties does MCP deliver in an enterprise SharePoint integration context, and how do these compare to alternative integration approaches?
+
+  \item \textbf{RQ4 (Performance):} What are the latency, throughput, and scalability characteristics of the RAG+MCP system under realistic enterprise workload conditions?
+
+  \item \textbf{RQ5 (Acceptance):} How do end-users perceive the usefulness, trustworthiness, and ease of use of the AntiGravity assistant compared to their current SharePoint search workflow?
+\end{itemize}
+
+%------------------------------------------------------------------------------
+\section{Research Approach and Contributions}
+\label{sec:intro-contributions}
+%------------------------------------------------------------------------------
+
+This thesis adopts the \textbf{Design Science Research} (DSR) paradigm \citep{Hevner2004}, which frames research as the construction and rigorous evaluation of a purposeful artifact. The artifact — the AntiGravity RAG+MCP system — constitutes the primary research output, while the evaluation of that artifact against a real organizational problem constitutes the primary scientific contribution.
+
+The thesis makes the following contributions:
+
+\paragraph{Scientific Contribution 1 (SC1):} A formal comparative evaluation framework for RAG+MCP architectures in enterprise settings, operationalized through a controlled experiment on a real SharePoint corpus with three conditions: (A) standalone LLM, (B) naive RAG, (C) RAG+MCP. This is, to the best of our knowledge, the first published empirical study to evaluate MCP-grounded RAG against baseline architectures on a private enterprise document corpus.
+
+\paragraph{Scientific Contribution 2 (SC2):} A reference architecture for secure, \gls{acl}-aware RAG deployment in enterprise environments, including design patterns for MCP-compatible SharePoint connectors and a formal analysis of the security properties of the proposed architecture.
+
+\paragraph{Scientific Contribution 3 (SC3):} An application of Design Science Research to the evaluation of enterprise AI systems, demonstrating how DSR can structure both the artifact construction and the artifact evaluation in a single methodologically coherent framework.
+
+\paragraph{Technical Contribution 1 (TC1):} An MCP-compatible SharePoint connector that extracts documents from SharePoint, respects ACLs, and exposes the corpus through the MCP interface.
+
+\paragraph{Technical Contribution 2 (TC2):} A domain-specific benchmark dataset of question-answer pairs derived from the DNSI SharePoint corpus, suitable for evaluating any conversational assistant on enterprise business documents.
+
+%------------------------------------------------------------------------------
+\section{Scope and Boundaries}
+\label{sec:intro-scope}
+%------------------------------------------------------------------------------
+
+This thesis addresses the design, implementation, and evaluation of a conversational assistant for enterprise document access. The following boundaries apply:
+
+\textbf{In scope:} Design of the AntiGravity architecture; implementation of the RAG+MCP pipeline; evaluation against three experimental conditions; retrieval, generation, system, and user evaluation; security architecture analysis; DSR-grounded methodology.
+
+\textbf{Out of scope:} Training or fine-tuning of language models; multi-tenant deployment; real-time SharePoint delta synchronization; extension to data sources beyond SharePoint; production-scale infrastructure optimization. These are identified as directions for future work in Chapter~\ref{chap:discussion}.
+
+%------------------------------------------------------------------------------
+\section{Thesis Structure}
+\label{sec:intro-structure}
+%------------------------------------------------------------------------------
+
+The remainder of this thesis is organized as follows:
+
+\textbf{Chapter~\ref{chap:background}} establishes the theoretical and empirical foundations of the work through a comprehensive review of the literature on LLMs, RAG architectures, vector search, enterprise knowledge management, the Model Context Protocol, and enterprise AI security. It concludes by identifying the research gap this thesis fills.
+
+\textbf{Chapter~\ref{chap:methodology}} formalizes the research methodology, grounding the approach in Design Science Research, and specifies the complete evaluation protocol for each of the four evaluation dimensions.
+
+\textbf{Chapter~\ref{chap:architecture}} presents the system design and architecture of the AntiGravity assistant, documenting the design decisions made at each architectural layer, the alternatives considered and rejected, and the trade-offs accepted.
+
+\textbf{Chapter~\ref{chap:implementation}} describes the technical implementation of the system, documenting the engineering challenges encountered and the solutions developed.
+
+\textbf{Chapter~\ref{chap:evaluation}} presents the experimental results across all four evaluation dimensions, tests the six research hypotheses, and provides detailed statistical analysis of the findings.
+
+\textbf{Chapter~\ref{chap:discussion}} provides a critical discussion of the results, analyzing strengths, weaknesses, limitations, deployment challenges, security gaps, and the generalizability of the findings.
+
+\textbf{Chapter~\ref{chap:conclusion}} synthesizes the contributions of the thesis, provides explicit answers to each research question, and outlines the directions for future work, including a proposed research agenda for CIFRE doctoral continuation.

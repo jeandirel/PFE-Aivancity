@@ -1,0 +1,86 @@
+%==============================================================================
+% CHAPTER 8 — CONCLUSION
+%==============================================================================
+\chapter{Conclusion}
+\label{chap:conclusion}
+
+%------------------------------------------------------------------------------
+\section{Summary of Contributions}
+\label{sec:conc-contributions}
+%------------------------------------------------------------------------------
+
+This thesis set out to design, implement, and evaluate a RAG conversational assistant grounded in the Model Context Protocol for enterprise knowledge access from SharePoint. The work has produced four scientific contributions and four technical contributions, each of which is summarized below with the evidence base that validates it.
+
+\paragraph{SC1 — Formal comparative evaluation framework.} This thesis presents the first published empirical comparison of LLM Alone, Naive RAG, and RAG+MCP architectures on a private enterprise SharePoint corpus with ACL enforcement. The evaluation framework — a domain-specific 50-item benchmark, RAGAS metrics for generation quality, Precision@K/MRR/nDCG for retrieval quality, latency benchmarking, and a mixed-methods user study — is documented in sufficient detail for replication and serves as a methodological contribution independent of the specific results obtained.
+
+\paragraph{SC2 — Reference architecture for ACL-aware enterprise RAG.} The AntiGravity architecture introduces a novel pattern for permission-aware retrieval: the over-retrieval design ($K=20 \to k=5$ post-ACL-filter) and the structural placement of ACL enforcement within the MCP server boundary. These design patterns are documented with formal security properties (no unauthorized content traverses the MCP boundary) and can be adopted by practitioners deploying RAG systems in access-controlled enterprise environments.
+
+\paragraph{SC3 — Application of DSR to enterprise AI evaluation.} The thesis demonstrates that Design Science Research provides a principled framework for research that simultaneously produces a system artifact and empirically evaluates it. The three-cycle DSR model (Relevance, Design, Rigor) maps cleanly onto the research phases of this work and is recommended as the methodology of choice for applied enterprise AI research.
+
+\paragraph{SC4 — AntiGravity proof of concept.} The implemented system validates the proposed architecture under real DNSI production constraints: corporate proxy, OAuth 2.0 authentication, DNSI document formats, and French/English mixed-language corpus. The challenges encountered and resolved (Section~\ref{sec:impl-challenges}) constitute practical engineering knowledge not available from theoretical design alone.
+
+\paragraph{TC1--TC4.} The technical contributions — MCP-compatible SharePoint connector, ACL-enforced retrieval pipeline, domain-specific benchmark dataset, and deployment documentation — are provided in the appendices as reproducible artifacts.
+
+%------------------------------------------------------------------------------
+\section{Answers to Research Questions}
+\label{sec:conc-rq-answers}
+%------------------------------------------------------------------------------
+
+\paragraph{RQ1 (Primary):} \textit{To what extent does a RAG+MCP architecture enable more reliable, secure, and traceable access to enterprise knowledge than a standalone LLM or naive RAG?}
+
+The evidence supports a positive answer on all three dimensions. \textit{Reliability:} RAG+MCP reduces hallucination rate from 44\% to 9\% (H1 confirmed, $\chi^2$ $p = 0.003$) and raises faithfulness from 0.28 to 0.89 over all three conditions. \textit{Security:} The structural ACL enforcement at the MCP boundary provides a formally verifiable security property absent from all baseline architectures. \textit{Traceability:} Mandatory source citation in every response creates an audit trail that neither Condition A nor Condition B provides.
+
+\paragraph{RQ2 (Retrieval):} \textit{What retrieval configuration maximizes precision and recall on a domain-specific SharePoint corpus?}
+
+The combination of \texttt{all-mpnet-base-v2} embeddings (768 dimensions, local deployment), FAISS IndexFlatIP exact search, and MS-MARCO cross-encoder re-ranking achieves the best retrieval performance on the DNSI benchmark. Dense retrieval (P@5 = 0.54) substantially outperforms BM25 lexical search (P@5 = 0.31), confirming H3 ($p < 0.001$). Re-ranking adds a further +18.8\% MRR improvement (H6 confirmed, $p = 0.002$). The 512-token / 64-token-overlap recursive chunking strategy was confirmed as superior to zero-overlap fixed-size chunking through early-stage ablation.
+
+\paragraph{RQ3 (Protocol):} \textit{What specific properties does MCP deliver in an enterprise SharePoint integration context?}
+
+MCP delivers three properties that alternative integration approaches do not: (1) a stable protocol boundary that decouples the AI pipeline from SharePoint API evolution; (2) a structural security enforcement point enabling ACL filtering before context reaches the LLM; and (3) a standardized connector interface that enables the SharePoint connector to be reused across different MCP-compatible AI clients. The measured latency overhead of the MCP protocol layer is 79\,ms at P95 --- within the 200\,ms budget defined in NFR04 (H4 partially confirmed; see Section~\ref{sec:eval-performance}).
+
+\paragraph{RQ4 (Performance):} \textit{What are the latency and throughput characteristics under realistic enterprise conditions?}
+
+On CPU infrastructure, end-to-end P95 latency is dominated by LLM generation (48.2\,s), which substantially exceeds the 5-second NFR01 target. All non-generation components --- embedding encoding (38\,ms), FAISS retrieval (14\,ms), ACL resolution (287\,ms), cross-encoder re-ranking (487\,ms), and MCP assembly (79\,ms) --- operate within their individual NFR budgets. GPU deployment is the required intervention to achieve NFR01 compliance; estimated GPU inference time for Mistral 7B is 2--4\,s, which would bring total P95 below 5\,s.
+
+\paragraph{RQ5 (Acceptance):} \textit{How do end-users perceive the AntiGravity assistant compared to current SharePoint search?}
+
+Among 14 DNSI employees, AntiGravity achieves a SUS score of 71.8/100 (classified as \emph{good}, 95\% CI [66.5, 77.1]) and a TAM Perceived Usefulness score of 5.4/7, significantly higher than self-reported SharePoint satisfaction (3.8/7, $p = 0.003$), confirming H5. Task completion rate on representative business tasks is 89\% for AntiGravity vs.\ 60\% for SharePoint search, with a mean time saving of 162 seconds per task. The primary adoption barrier identified qualitatively is response latency, not usability or trust. Source citations were consistently identified as the feature most valued by users, reinforcing the traceability contribution of the MCP architecture.
+
+%------------------------------------------------------------------------------
+\section{Scientific and Practical Implications}
+\label{sec:conc-implications}
+%------------------------------------------------------------------------------
+
+\paragraph{For researchers.} This thesis contributes empirical evidence to an important open question in the RAG literature: whether the introduction of a protocol standardization layer (MCP) between AI and data sources adds value beyond what the RAG architecture itself provides. The answer is nuanced: MCP's value is primarily architectural (security, maintainability, standardization) and does not manifest as metric improvements in isolation. Researchers evaluating RAG-over-enterprise-data systems should expand their evaluation frameworks beyond retrieval/generation metrics to include security audits, maintainability assessments, and operational complexity evaluations.
+
+\paragraph{For practitioners.} Organizations deploying LLM-based assistants over internal documentation corpora should: (1) adopt delegated OAuth 2.0 permissions (not service accounts) to enable per-user ACL enforcement; (2) implement ACL filtering at the retrieval layer, not the display layer; (3) prioritize source citation in the LLM prompt template as the most impactful single intervention for user trust; (4) plan for GPU infrastructure if generation latency is a user adoption concern; and (5) consider MCP as a long-term integration strategy that reduces connector maintenance overhead as the number of data sources grows.
+
+%------------------------------------------------------------------------------
+\section{Toward a CIFRE Doctoral Continuation}
+\label{sec:conc-phd}
+%------------------------------------------------------------------------------
+
+This thesis establishes both the technical foundation and the scientific positioning for a CIFRE doctoral research program. The work demonstrates the ability to design an industrial-grade AI system, evaluate it rigorously, and locate its contributions within the academic literature.
+
+Three open scientific questions, identified through the limitations of this thesis, constitute a natural doctoral research agenda:
+
+\begin{enumerate}
+  \item \textbf{MCP as a universal enterprise AI integration standard:} Can MCP be formally analyzed as a security protocol, and what properties (confidentiality, integrity, access control) can be formally proven about MCP-mediated RAG architectures? This question connects to the formal methods literature and is motivated by the residual prompt injection risk identified in this thesis.
+
+  \item \textbf{Scalable multi-source, multi-modal enterprise RAG:} How does the RAG+MCP architecture perform when federated across multiple enterprise data sources (SharePoint, email, databases) and multiple modalities (text, tables, structured data)? What new architectural patterns are required? This question is motivated by the single-source limitation of this thesis.
+
+  \item \textbf{Enterprise AI adoption factors:} What organizational, cognitive, and system design factors determine whether employees adopt and trust AI-powered knowledge assistants? What is the relationship between latency, faithfulness, citation quality, and adoption intent? This question connects to information systems adoption literature (TAM, UTAUT) and is motivated by the small and time-constrained user study of this thesis.
+\end{enumerate}
+
+A CIFRE PhD co-supervised between Aivancity and the DNSI's host organization would provide the industrial context, data access, and organizational scope required to address all three questions.
+
+%------------------------------------------------------------------------------
+\section{Closing Reflection}
+\label{sec:conc-reflection}
+%------------------------------------------------------------------------------
+
+This thesis began with a simple observation: organizations accumulate knowledge at scale and fail to use it at scale. The gap between what an organization knows and what its members can access and apply is an organizational failure with real operational and economic consequences. Artificial intelligence, in the specific form of RAG-augmented language models, offers a technically credible solution to this problem — not by replacing human expertise, but by making the organization's documented knowledge genuinely searchable, synthesizable, and accessible through natural language.
+
+The Model Context Protocol, positioned as a standardization layer for AI-data integration, represents a maturation of this solution space: a recognition that the fragmentation of enterprise knowledge across heterogeneous systems requires not just better AI models, but better integration standards. This thesis has demonstrated, through the design and evaluation of AntiGravity, that the combination is both technically realizable and practically valuable under real enterprise constraints.
+
+The work is a beginning, not an end. The evaluation is a proof of concept, not a production certification. The architecture is a design reference, not a finished product. But the research question has been engaged with the rigor it deserves, and the contributions — however bounded by the constraints of a Master's thesis — are genuine.
