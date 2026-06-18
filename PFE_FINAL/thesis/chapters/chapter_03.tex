@@ -94,7 +94,7 @@ The comparative evaluation uses three experimental conditions to answer RQ1:
   \item \textbf{Condition C — RAG+MCP (AntiGravity):} The full system as designed — MCP-mediated retrieval with ACL enforcement, re-ranking, and generation via Mistral 7B.
 \end{itemize}
 
-Comparing C to A isolates the total contribution of the RAG+MCP architecture. Comparing C to B isolates the specific contribution of the MCP layer and the re-ranking module. All conditions use the same underlying language model (Mistral 7B Instruct) with identical generation parameters (temperature=0, max\_tokens=512) to ensure that observed differences are attributable to the architecture, not to model variation.
+Comparing C to A isolates the total contribution of the RAG+MCP architecture. Comparing C to B isolates the specific contribution of the MCP layer and the re-ranking module. All conditions use the same underlying language model (Mistral 7B Instruct) with identical generation parameters (temperature=0.1, top\_p=0.9, max\_tokens=512, repetition\_penalty=1.1) to ensure that observed differences are attributable to the architecture, not to model variation.
 
 \subsection{Benchmark Dataset Construction}
 
@@ -169,6 +169,21 @@ The user study is conducted with DNSI employees (target $N \geq 10$) following a
 \end{enumerate}
 
 Given the constraint of a small sample ($N < 30$), SUS and TAM scores are reported with confidence intervals using bootstrapping. Qualitative interview data is analyzed thematically \citep{Braun2006}.
+
+%------------------------------------------------------------------------------
+\subsection{Research Hypotheses}
+\label{sec:method-hypotheses}
+
+The following six hypotheses operationalize the research questions. Each hypothesis is evaluated in Chapter~\ref{chap:evaluation} against the corresponding metric.
+
+\begin{itemize}
+\item \textbf{H1:} The RAG+MCP architecture (Condition C) produces a statistically significantly lower hallucination rate than the standalone LLM (Condition A) on the DNSI benchmark.
+\item \textbf{H2:} The RAG+MCP architecture achieves a RAGAS Faithfulness score \$\geq 0.85\$ on the benchmark (NFR10).
+\item \textbf{H3:} Dense semantic retrieval (Condition B) achieves higher Precision@5 than BM25 lexical search on the DNSI corpus.
+\item \textbf{H4:} The MCP protocol overhead does not exceed 200~ms at P95 (NFR04 MCP budget).
+\item \textbf{H5:} User acceptance of AntiGravity meets the threshold of SUS \$\geq 68\$ and TAM Perceived Usefulness significantly higher than self-reported SharePoint satisfaction.
+\item \textbf{H6:} Cross-encoder re-ranking improves MRR over bi-encoder-only retrieval by at least 15\% relative.
+\end{itemize}
 
 %------------------------------------------------------------------------------
 \section{Validity and Reliability}
