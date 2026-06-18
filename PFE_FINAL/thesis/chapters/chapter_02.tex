@@ -1,0 +1,325 @@
+%==============================================================================
+% CHAPTER 2 — BACKGROUND AND STATE OF THE ART
+%==============================================================================
+\chapter{Background and State of the Art}
+\label{chap:background}
+
+This chapter establishes the theoretical and empirical foundations required to understand, position, and evaluate the contributions of this thesis. We survey the relevant literature across six interconnected domains: Large Language Models and their limitations (Section~\ref{sec:bg-llm}); Retrieval-Augmented Generation architectures (Section~\ref{sec:bg-rag}); vector search and semantic indexing (Section~\ref{sec:bg-vector}); enterprise knowledge management and SharePoint (Section~\ref{sec:bg-enterprise}); the Model Context Protocol (Section~\ref{sec:bg-mcp}); security in enterprise AI systems (Section~\ref{sec:bg-security}); and RAG evaluation frameworks (Section~\ref{sec:bg-evaluation}). Each section concludes with a critical assessment of the current state of the art and the limitations this thesis addresses. Section~\ref{sec:bg-gap} synthesizes the literature into an explicit research gap statement.
+
+%------------------------------------------------------------------------------
+\section{Large Language Models: Capabilities and Limitations}
+\label{sec:bg-llm}
+%------------------------------------------------------------------------------
+
+\subsection{The Transformer Architecture}
+
+The modern era of Large Language Models originates with the Transformer architecture introduced by \citet{Vaswani2017} in their seminal paper "Attention Is All You Need." The Transformer replaces the sequential computation of recurrent networks with a self-attention mechanism that computes, for each token in a sequence, a weighted representation of all other tokens simultaneously. This design enables parallelization during training — a property that, combined with scale, proved to be the foundation of modern language models.
+
+The self-attention mechanism can be formalized as:
+\begin{equation}
+  \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^\top}{\sqrt{d_k}}\right)V
+  \label{eq:attention}
+\end{equation}
+where $Q$, $K$, and $V$ are query, key, and value matrices respectively, and $d_k$ is the dimensionality of the key vectors. The scaling factor $\sqrt{d_k}$ prevents vanishing gradients in high-dimensional spaces.
+
+Modern large-scale language models — including GPT-4 \citep{OpenAI2023}, Mistral 7B \citep{Jiang2023}, Llama 2/3 \citep{Touvron2023}, and Claude \citep{Anthropic2023} — are decoder-only or encoder-decoder Transformers trained via next-token prediction on datasets of trillions of tokens. The emergent capabilities observed at scale — instruction following, chain-of-thought reasoning, code generation, multi-step problem solving — are not explicitly programmed but arise from the optimization process applied at sufficient scale \citep{Wei2022}.
+
+\subsection{Parametric vs Non-Parametric Knowledge}
+
+A foundational distinction for understanding LLM limitations is between \textit{parametric} and \textit{non-parametric} knowledge \citep{Lewis2020}. Parametric knowledge is information encoded in a model's weights during training — it is fixed, distributed, implicit, and inaccessible without inference. Non-parametric knowledge is information stored in explicit, updatable external databases — structured, addressable, and modifiable without retraining.
+
+LLMs are parametic knowledge stores. Everything they "know" is compressed into billions of floating-point weights through the training process. This has several important implications:
+
+\begin{itemize}
+  \item \textbf{Knowledge is probabilistic, not factual.} The model learns statistical patterns in text, not ground truth facts. Information that is rare, contradictory, or absent in the training corpus will be poorly represented or incorrectly recalled.
+  \item \textbf{Knowledge is static.} Once training is complete, the model's knowledge is frozen. Events after the training cutoff, or information not present in training data, are genuinely unknown to the model.
+  \item \textbf{Knowledge is opaque.} There is no mechanism for tracing a model's assertion to a specific source document. The model cannot say "I know this because I read it in document X" — it can only generate what its weights make probable.
+\end{itemize}
+
+\subsection{The Hallucination Problem}
+
+Hallucination — the generation of confident, fluent, but factually incorrect text — is the most operationally significant limitation of LLMs for enterprise deployment. \citet{Ji2023} provide a taxonomy of hallucination types, distinguishing between intrinsic hallucinations (contradictions of source material) and extrinsic hallucinations (unverifiable claims absent from any source). \citet{Maynez2020} demonstrate that even state-of-the-art summarization models hallucinate in 30\% or more of generated summaries.
+
+The underlying mechanism of hallucination is partially understood. Models optimize for textual fluency and statistical plausibility, not factual accuracy. When asked about information that is rare, ambiguous, or absent in training data, the model continues to generate plausible text — because that is what it was trained to do — regardless of whether the generated content is grounded in fact \citep{Rawte2023}.
+
+For enterprise applications, hallucination is not merely a quality problem — it is a trust and liability problem. A conversational assistant that occasionally fabricates security policy requirements, invents technical specifications, or misrepresents regulatory obligations can cause real operational harm. Any architecture deployed in an enterprise knowledge management context must provide structural mechanisms for constraining model generation to verified, retrievable source material.
+
+\subsection{Critical Assessment}
+
+Despite their remarkable capabilities, standalone LLMs are insufficient for enterprise knowledge access for three reasons that cannot be resolved through better model architecture or larger training data: (1) private organizational knowledge will never appear in public training corpora; (2) static training weights cannot reflect dynamic organizational documentation; and (3) parametric generation provides no mechanism for access control or source attribution. The RAG architecture addresses all three limitations. We now examine it in detail.
+
+%------------------------------------------------------------------------------
+\section{Retrieval-Augmented Generation}
+\label{sec:bg-rag}
+%------------------------------------------------------------------------------
+
+\subsection{Foundational Architecture}
+
+Retrieval-Augmented Generation was formalized by \citet{Lewis2020} as a general-purpose architecture for knowledge-intensive NLP tasks. The original formulation combines a parametric generative model (such as BART or GPT) with a non-parametric dense retrieval system (DPR — Dense Passage Retrieval), end-to-end trained to improve performance on open-domain question answering benchmarks.
+
+The RAG inference process follows a three-stage pipeline:
+
+\begin{enumerate}
+  \item \textbf{Query encoding:} The user's query $q$ is encoded by a query encoder $E_q$ into a dense vector representation $\mathbf{q} = E_q(q) \in \mathbb{R}^d$.
+
+  \item \textbf{Retrieval:} The query vector $\mathbf{q}$ is used to retrieve the $k$ most semantically similar document chunks from an indexed corpus. Formally:
+  \begin{equation}
+    D_k = \arg\max_{d \in \mathcal{D}} \text{sim}(\mathbf{q}, E_d(d))
+    \label{eq:retrieval}
+  \end{equation}
+  where $\mathcal{D}$ is the document corpus, $E_d$ is the document encoder, and $\text{sim}(\cdot, \cdot)$ is a similarity function (typically dot product or cosine similarity).
+
+  \item \textbf{Generation:} The retrieved documents $D_k$ are concatenated with the original query and passed to the generative model $G$ to produce the final response:
+  \begin{equation}
+    y = G(q, D_k)
+    \label{eq:generation}
+  \end{equation}
+\end{enumerate}
+
+The central insight of this architecture is that the retrieval step \textit{grounds} the generation step: the model's output is constrained by, and should be attributable to, the retrieved context. This grounding mechanism directly mitigates hallucination by providing the model with relevant, specific, authoritative information at generation time.
+
+\subsection{RAG Variants and Evolution}
+
+The three-year period following Lewis et al.'s foundational work has seen rapid architectural evolution. \citet{Gao2024} organize this evolution into three generations:
+
+\paragraph{Naive RAG.} The direct implementation of the Lewis et al. pipeline: retrieve, then generate. Simple and efficient, but susceptible to retrieval failure (the generation can only be as good as what was retrieved) and context stuffing (injecting low-quality retrieved passages that confuse the model rather than grounding it).
+
+\paragraph{Advanced RAG.} Introduces improvements at both the pre-retrieval and post-retrieval stages. Pre-retrieval techniques include query rewriting \citep{Ma2023}, HyDE (Hypothetical Document Embeddings) \citep{Gao2022HyDE}, and step-back prompting. Post-retrieval techniques include re-ranking (filtering and reordering retrieved passages by relevance to the query), context compression (removing low-information content from retrieved passages), and fusion retrieval (combining dense and sparse retrieval signals).
+
+\paragraph{Modular RAG.} Generalizes the pipeline into a configurable sequence of specialized modules — query classification, routing, retrieval, re-ranking, fusion, generation, and evaluation — that can be independently optimized and combined. Frameworks such as LangChain \citep{Chase2022} and LlamaIndex \citep{Liu2022} provide infrastructure for constructing modular RAG pipelines.
+
+\subsection{Limitations of Current RAG Implementations}
+
+Despite its maturity, current RAG research and tooling presents three significant limitations for enterprise deployment:
+
+\textbf{Connector brittleness.} Most RAG implementations assume a static, pre-processed document corpus. Enterprise knowledge is dynamic: documents are added, modified, and deleted continuously. Maintaining a synchronized index requires reliable, efficient data connectors, which existing frameworks handle inconsistently.
+
+\textbf{Access control is an afterthought.} The dominant RAG frameworks (LangChain, LlamaIndex) do not provide native mechanisms for enforcing document-level access control. Implementing ACL-aware retrieval requires custom engineering, and the resulting solutions are typically tightly coupled to the specific data source's permission model.
+
+\textbf{Connector standardization is absent.} Each data source (SharePoint, Confluence, S3, databases) requires a different connector, written against a different API, with different authentication semantics. This creates an O(n × m) integration problem that grows with the number of data sources and AI pipeline variants.
+
+The Model Context Protocol directly targets this third limitation, and its architecture has implications for the first two as well.
+
+%------------------------------------------------------------------------------
+\section{Vector Search and Semantic Indexing}
+\label{sec:bg-vector}
+%------------------------------------------------------------------------------
+
+\subsection{Dense Embeddings}
+
+The retrieval step in a RAG pipeline depends on the ability to represent both queries and documents as dense vectors in a shared semantic space, such that similar meanings produce geometrically proximate representations. This requires an \textit{embedding model} — a neural encoder that maps variable-length text to fixed-dimensional vectors.
+
+The field has converged on bi-encoder architectures trained with contrastive objectives \citep{Karpukhin2020DPR}. Models such as \texttt{sentence-transformers/all-MiniLM-L6-v2} \citep{Reimers2019}, \texttt{text-embedding-ada-002} (OpenAI), and \texttt{e5-large} \citep{Wang2022} produce embeddings that capture semantic similarity significantly better than lexical representations (TF-IDF, BM25) on most open-domain benchmarks. The trade-off between embedding quality and computational cost (embedding dimensionality, model size, inference speed) is a critical engineering decision in any RAG deployment.
+
+\subsection{FAISS: Scalable Similarity Search}
+
+The \textit{Facebook AI Similarity Search} (\gls{faiss}) library \citep{Johnson2019} provides state-of-the-art infrastructure for billion-scale approximate nearest neighbor (\gls{ann}) search in dense vector spaces. FAISS implements multiple index types with different precision-speed trade-offs:
+
+\begin{table}[H]
+\centering
+\caption{FAISS index types and their trade-offs}
+\label{tab:faiss-indexes}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Index Type} & \textbf{Precision} & \textbf{Speed} & \textbf{Memory} \\
+\midrule
+\texttt{IndexFlatL2} & Exact (100\%) & Slow (O(n)) & High \\
+\texttt{IndexIVFFlat} & High (95–99\%) & Fast & Moderate \\
+\texttt{IndexHNSW} & High (95–99\%) & Very fast & High \\
+\texttt{IndexIVFPQ} & Moderate (85–95\%) & Very fast & Low \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For the document scales typical of an enterprise SharePoint corpus (thousands to hundreds of thousands of documents), \texttt{IndexFlatL2} (exact search) is computationally feasible and maximally precise, while \texttt{IndexHNSW} provides the best speed-precision trade-off at larger scales. The optimal choice depends on corpus size, query latency requirements, and available memory — all of which must be measured empirically for the specific deployment context.
+
+\subsection{Re-ranking}
+
+Bi-encoder retrieval trades recall for precision: the shared embedding space, trained for broad semantic similarity, may retrieve documents that are topically related but not directly responsive to the specific query. Re-ranking addresses this by applying a more computationally expensive but more discriminative model to the top-$k$ retrieved candidates, reordering them by relevance to the specific query.
+
+Cross-encoder architectures \citep{Nogueira2019}, which process the (query, document) pair jointly rather than independently, consistently outperform bi-encoder retrieval on precision metrics at the cost of higher inference latency. ColBERT \citep{Khattab2020} provides an intermediate approach using late interaction, achieving cross-encoder precision at closer to bi-encoder speed. The choice between these approaches is another deployment-critical engineering decision.
+
+%------------------------------------------------------------------------------
+\section{Enterprise Knowledge Management and SharePoint}
+\label{sec:bg-enterprise}
+%------------------------------------------------------------------------------
+
+\subsection{Enterprise Knowledge Management}
+
+Knowledge Management (KM) as a discipline addresses the creation, capture, storage, sharing, and application of organizational knowledge \citep{Alavi2001}. The field distinguishes between explicit knowledge (codified in documents, procedures, and systems) and tacit knowledge (embedded in individual expertise and practice). Enterprise AI systems such as the one developed in this thesis target explicit knowledge — the documented corpus accessible on platforms like SharePoint.
+
+The organizational context matters for system design. Enterprises operate under regulatory constraints (data protection, information security, sector-specific compliance), organizational hierarchies (which map to document access permissions), and professional vocabulary (domain-specific terminology that generic embedding models may not represent well). A system designed for Wikipedia-scale open-domain question answering will not necessarily perform well on an enterprise corpus — a point that motivates the domain-specific evaluation protocol in this thesis.
+
+\subsection{SharePoint Architecture and Security Model}
+
+Microsoft SharePoint Online is built on a hierarchical content structure: Tenant → Site Collection → Site → Library → Folder → Document. Each level of this hierarchy can carry permission settings, which are either inherited (the default) or explicitly overridden. The SharePoint permission model comprises permission levels (Full Control, Design, Edit, Contribute, Read, View Only) assigned to security principals (users, Microsoft Entra ID groups, SharePoint groups) \citep{Microsoft2024}.
+
+At the API level, SharePoint exposes two integration surfaces relevant to this thesis:
+
+\begin{itemize}
+  \item \textbf{Microsoft Graph API} \citep{MicrosoftGraph2024}: a REST API providing unified access to Microsoft 365 services, including SharePoint document libraries. Authentication uses OAuth 2.0 with delegated or application permissions.
+  \item \textbf{SharePoint REST API}: the legacy SharePoint-specific API, still widely used for site-level operations.
+\end{itemize}
+
+The key security challenge for RAG-over-SharePoint is \textit{permission-aware retrieval}: the semantic search that identifies relevant document chunks must respect the access rights of the querying user. A naive implementation — building a FAISS index over all documents, regardless of permissions, and then checking permissions at display time — would expose the existence of unauthorized documents to the user (through responses that implicitly reference them) and potentially leak information if the authorization check fails or is bypassed. A secure implementation must enforce permissions at the \textit{retrieval} layer, not the display layer. Designing this enforcement mechanism is a primary technical contribution of this thesis.
+
+%------------------------------------------------------------------------------
+\section{The Model Context Protocol}
+\label{sec:bg-mcp}
+%------------------------------------------------------------------------------
+
+\subsection{Protocol Overview}
+
+The Model Context Protocol (MCP) \citep{Anthropic2024MCP} was publicly released by Anthropic in November 2024 as an open standard for connecting AI systems to external data and tool providers. As of mid-2026, MCP has been adopted by major AI platforms including Claude (Anthropic), Copilot (Microsoft), and numerous enterprise AI frameworks, positioning it as a de facto standard for AI-data integration.
+
+MCP defines a client-server architecture with three roles:
+
+\begin{itemize}
+  \item \textbf{MCP Host:} The AI application or agent (in our case, the AntiGravity conversational client) that initiates connections and uses capabilities.
+  \item \textbf{MCP Server:} A lightweight process that exposes data and tools to the host through the MCP protocol (in our case, the SharePoint context server).
+  \item \textbf{MCP Transport:} The communication layer between host and server, supporting stdio (for local processes) and HTTP with Server-Sent Events (for networked deployments).
+\end{itemize}
+
+MCP defines three categories of server-exposed capabilities:
+
+\begin{itemize}
+  \item \textbf{Resources:} Data that the AI can read — documents, files, database records, API responses.
+  \item \textbf{Tools:} Functions the AI can call — search, filter, write, API operations.
+  \item \textbf{Prompts:} Reusable prompt templates that the server exposes to the AI.
+\end{itemize}
+
+\subsection{MCP vs Alternative Integration Approaches}
+
+The value of MCP can only be properly assessed in comparison to the alternatives it is designed to replace. Table~\ref{tab:mcp-comparison} provides a structured comparison.
+
+\begin{table}[H]
+\centering
+\caption{Comparison of AI-data integration approaches}
+\label{tab:mcp-comparison}
+\begin{tabularx}{\textwidth}{@{}lXXX@{}}
+\toprule
+\textbf{Dimension} & \textbf{Direct API} & \textbf{LangChain / LlamaIndex} & \textbf{MCP} \\
+\midrule
+Standardization & None (source-specific) & Framework-specific & Open protocol standard \\
+Connector reuse & None & Framework ecosystem & Cross-framework (any MCP client) \\
+Security boundary & In-pipeline code & In-pipeline code & At server boundary (structural) \\
+Access control & Ad hoc & Ad hoc & Enforced at server level \\
+Maintainability & Low (coupled) & Medium (framework dep.) & High (interface stability) \\
+Overhead & Minimal & Low & Low-to-moderate (protocol) \\
+Maturity (2026) & High & High & Emerging but fast-growing \\
+Enterprise adoption & High & Medium & Growing (Microsoft, Anthropic) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The comparison reveals MCP's primary advantage: structural security enforcement and cross-framework connector reuse. Its primary disadvantage — lower maturity and higher protocol overhead compared to direct API integration — is the key empirical question this thesis addresses.
+
+\subsection{MCP in Enterprise Deployments: Open Questions}
+
+Despite MCP's architectural promise, several questions remain unanswered in the literature:
+
+\begin{enumerate}
+  \item What latency overhead does the MCP protocol layer introduce in practice, and is this overhead acceptable in enterprise SLA contexts?
+  \item How does MCP's structured context management compare to direct context injection in terms of retrieval quality and generation faithfulness?
+  \item Can MCP's server-side security enforcement reliably enforce SharePoint ACLs without performance degradation?
+  \item What is the operational complexity of deploying an MCP server in a corporate network environment with proxy constraints?
+\end{enumerate}
+
+These are the questions that Chapter~\ref{chap:evaluation} empirically addresses.
+
+%------------------------------------------------------------------------------
+\section{Security in Enterprise AI Systems}
+\label{sec:bg-security}
+%------------------------------------------------------------------------------
+
+\subsection{Information Security Requirements}
+
+Enterprise AI systems operate within information security frameworks that impose binding requirements on data handling, access control, and audit logging. The ISO/IEC 27001 standard \citep{ISO27001} defines a comprehensive Information Security Management System (ISMS) framework whose principles are directly applicable to AI system design: access control (Annex A.9), cryptography (A.10), operations security (A.12), and supplier relationships (A.15) are all implicated in the deployment of a conversational AI system over enterprise document corpora.
+
+The specific security concerns for a RAG-over-SharePoint system include:
+
+\paragraph{Document access leakage.} If the retrieval system retrieves and injects into the LLM prompt a document the querying user is not authorized to access, the LLM may reflect information from that document in its response — even if the document is not explicitly cited. This indirect leakage is subtle and potentially more dangerous than direct access because it may not be detected by conventional access control audit tools.
+
+\paragraph{Prompt injection.} An adversarial actor with write access to SharePoint could plant documents containing prompt injection instructions — text designed to manipulate the LLM's behavior when retrieved as context \citep{Perez2022}. In an enterprise setting, this attack vector requires a threat model that accounts for internal adversaries.
+
+\paragraph{Model output as an attack surface.} LLM-generated responses that are displayed to users create a novel attack surface. If the model can be manipulated to generate links, JavaScript, or other active content, the UI layer must sanitize model outputs.
+
+\subsection{Authentication: OAuth 2.0 and SSO}
+
+Secure access to SharePoint via the Microsoft Graph API requires OAuth 2.0 authentication, with either delegated permissions (the application acts on behalf of a specific user, inheriting their permissions) or application permissions (the application has its own permissions, granted by an administrator). For an ACL-aware RAG system, \textit{delegated permissions are mandatory} — only delegated permissions allow the system to enforce the specific document access rights of the querying user, rather than the broader application-level permissions.
+
+In practice, this means that each user query must be executed under the user's OAuth token — a requirement that introduces session management complexity and latency overhead, but is non-negotiable from a security correctness standpoint.
+
+%------------------------------------------------------------------------------
+\section{RAG Evaluation Frameworks}
+\label{sec:bg-evaluation}
+%------------------------------------------------------------------------------
+
+\subsection{The RAGAS Framework}
+
+The evaluation of RAG systems requires metrics that assess both retrieval quality and generation quality, independently and jointly. The RAGAS framework \citep{Es2023RAGAS} provides an automated evaluation suite specifically designed for RAG pipelines, computing four primary metrics:
+
+\begin{itemize}
+  \item \textbf{Faithfulness:} The proportion of claims in the generated response that are grounded in the retrieved context. A faithful response makes only claims that can be directly inferred from the provided context. Computed as:
+  \begin{equation}
+    \text{Faithfulness} = \frac{|\text{claims in response supported by context}|}{|\text{total claims in response}|}
+    \label{eq:faithfulness}
+  \end{equation}
+
+  \item \textbf{Answer Relevancy:} The semantic similarity between the generated response and the original question, measuring whether the response addresses what was asked.
+
+  \item \textbf{Context Precision:} The proportion of the retrieved context that is actually relevant to the question, measuring retrieval efficiency.
+
+  \item \textbf{Context Recall:} The proportion of relevant information (as judged against a ground-truth answer) that is present in the retrieved context.
+\end{itemize}
+
+\subsection{Retrieval Evaluation Metrics}
+
+Classical information retrieval metrics provide complementary evaluation of the retrieval stage:
+
+\begin{itemize}
+  \item \textbf{Precision@K:} The proportion of the top-$K$ retrieved documents that are relevant. Precision@5 is the most commonly reported metric in RAG evaluation studies.
+  \item \textbf{Recall@K:} The proportion of all relevant documents that appear in the top-$K$ retrieved results.
+  \item \textbf{Mean Reciprocal Rank (MRR):} The average of the reciprocal ranks of the first relevant document across queries. Captures the position of the first correct result.
+  \item \textbf{Normalized Discounted Cumulative Gain (nDCG@K):} A rank-weighted precision metric that accounts for the position of relevant documents within the retrieved list.
+\end{itemize}
+
+\subsection{User Evaluation: SUS and TAM}
+
+Technical retrieval and generation metrics are necessary but insufficient for evaluating an enterprise system. The system must also be usable and accepted by its target users. Two validated instruments are employed in this thesis:
+
+The \textbf{System Usability Scale} (SUS) \citep{Brooke1996SUS} is a 10-item Likert questionnaire that produces a composite usability score from 0 to 100. SUS scores above 68 are considered above average, above 80 are considered excellent. SUS is technology-agnostic, widely validated, and appropriate for comparative usability assessment.
+
+The \textbf{Technology Acceptance Model} (TAM) \citep{Davis1989TAM} models user adoption through two primary constructs: perceived usefulness (PU) and perceived ease of use (PEOU). TAM has been extensively validated in enterprise software deployment contexts and provides theoretical grounding for interpreting user acceptance of AI-powered tools.
+
+%------------------------------------------------------------------------------
+\section{Research Gap and Thesis Positioning}
+\label{sec:bg-gap}
+%------------------------------------------------------------------------------
+
+The preceding review of the literature identifies a specific and well-defined research gap. Table~\ref{tab:research-gap} summarizes this positioning.
+
+\begin{table}[H]
+\centering
+\caption{Research gap: what existing work covers vs what this thesis contributes}
+\label{tab:research-gap}
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{Dimension} & \textbf{Existing Literature} & \textbf{This Thesis} \\
+\midrule
+Knowledge base & Wikipedia, open web, academic QA & Private enterprise SharePoint corpus \\
+Integration protocol & Ad-hoc connectors / LangChain & Model Context Protocol (standardized) \\
+Access control & Generally absent or post-hoc & ACL-enforced at retrieval layer (structural) \\
+Comparative evaluation & LLM vs RAG (general) & LLM vs RAG vs RAG+MCP (enterprise) \\
+Evaluation scope & Retrieval or generation & Retrieval + generation + system + user \\
+Industrial context & Academic benchmarks & Real DNSI production constraints \\
+DSR methodology & Rarely applied to RAG systems & Full DSR cycle applied \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The specific combination of (1) MCP as the integration protocol, (2) ACL-aware retrieval enforcement, (3) private enterprise corpus, and (4) comprehensive four-dimensional evaluation has not appeared in any prior published work as of the writing of this thesis. This combination constitutes the primary scientific novelty of the thesis and the direct motivation for the research questions formulated in Chapter~\ref{chap:introduction}.
+
+\bigskip
+
+\noindent\textbf{Chapter summary.} This chapter has established that: (1) standalone LLMs are structurally insufficient for enterprise knowledge access due to hallucination, knowledge cutoff, and the absence of access control; (2) RAG architectures address these limitations but existing implementations fail to provide standardized, secure integration with enterprise data sources; (3) FAISS-based dense retrieval with re-ranking represents the state of the art for scalable semantic search; (4) the Model Context Protocol provides a promising but empirically unevaluated standardization layer for AI-enterprise data integration; and (5) comprehensive RAG evaluation requires four complementary dimensions — retrieval, generation, system, and user. The following chapter describes the methodology adopted to address these gaps.

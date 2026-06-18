@@ -1,0 +1,161 @@
+%==============================================================================
+% MASTER THESIS — AIVANCITY PGE5
+% Design, Development, and Evaluation of a RAG Conversational Assistant
+% Based on the Model Context Protocol (MCP) for Secure and Intelligent
+% Access to Enterprise Knowledge Stored in SharePoint
+%
+% Author  : Jean Direl NZE
+% Program : Programme Grande École (PGE5)
+% School  : Aivancity School for Technology and Business, Villejuif, France
+% Year    : 2025–2026
+%==============================================================================
+
+\documentclass[12pt, a4paper, oneside]{report}
+
+%------------------------------------------------------------------------------
+% PACKAGES
+%------------------------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% Page geometry
+\usepackage[
+  top=2.5cm, bottom=2.5cm,
+  left=3.0cm, right=2.5cm
+]{geometry}
+
+% Typography
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{parskip}
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+
+% Mathematics
+\usepackage{amsmath, amssymb, amsthm}
+
+% Graphics and figures
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[table,xcdraw]{xcolor}
+\graphicspath{{figures/}}
+
+% Tables
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tabularx}
+
+% Code listings
+\usepackage{listings}
+\usepackage{minted}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  captionpos=b,
+  numbers=left,
+  numberstyle=\tiny,
+  tabsize=2
+}
+
+% Hyperlinks and PDF metadata
+\usepackage[
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue,
+  pdftitle={RAG Conversational Assistant Based on MCP for Enterprise SharePoint Knowledge Access},
+  pdfauthor={Jean Direl NZE},
+  pdfsubject={Master Thesis — Aivancity PGE5},
+  pdfkeywords={RAG, MCP, Model Context Protocol, SharePoint, Enterprise AI, LLM, FAISS}
+]{hyperref}
+
+% Bibliography
+\usepackage[
+  backend=biber,
+  style=authoryear,
+  sorting=nyt,
+  maxnames=3,
+  minnames=1,
+  natbib=true
+]{biblatex}
+\addbibresource{bibliography/references.bib}
+
+% Header and footer
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small Jean Direl NZE — Aivancity PGE5}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Chapter styling
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\Large\bfseries}
+  {\chaptertitlename\ \thechapter}{14pt}{\huge}
+\titlespacing*{\chapter}{0pt}{0pt}{20pt}
+
+% Acronyms and glossary
+\usepackage[acronym,toc]{glossaries}
+\makeglossaries
+\input{chapters/glossary}
+
+% Theorem environments
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{proposition}{Proposition}[chapter]
+\newtheorem{remark}{Remark}[chapter]
+
+% Custom colors
+\definecolor{aivancityblue}{RGB}{0, 82, 165}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+
+%------------------------------------------------------------------------------
+% DOCUMENT BEGIN
+%------------------------------------------------------------------------------
+\begin{document}
+
+%---- FRONT MATTER ------------------------------------------------------------
+\pagenumbering{roman}
+
+\include{chapters/cover}
+\include{chapters/abstract}
+\include{chapters/acknowledgements}
+
+\tableofcontents
+\listoffigures
+\listoftables
+\printglossary[type=\acronymtype, title=List of Abbreviations]
+
+%---- BODY --------------------------------------------------------------------
+\cleardoublepage
+\pagenumbering{arabic}
+
+\include{chapters/chapter_01}
+\include{chapters/chapter_02}
+\include{chapters/chapter_03}
+\include{chapters/chapter_04}
+\include{chapters/chapter_05}
+\include{chapters/chapter_06}
+\include{chapters/chapter_07}
+\include{chapters/chapter_08}
+
+%---- BACK MATTER -------------------------------------------------------------
+\printbibliography[heading=bibintoc, title={Bibliography}]
+
+\appendix
+\include{chapters/appendix_a}
+\include{chapters/appendix_b}
+\include{chapters/appendix_c}
+\include{chapters/appendix_d}
+\include{chapters/appendix_e}
+
+\end{document}

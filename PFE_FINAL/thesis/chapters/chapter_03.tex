@@ -1,0 +1,218 @@
+%==============================================================================
+% CHAPTER 3 — RESEARCH METHODOLOGY
+%==============================================================================
+\chapter{Research Methodology}
+\label{chap:methodology}
+
+%------------------------------------------------------------------------------
+\section{Choice of Research Paradigm}
+\label{sec:method-paradigm}
+%------------------------------------------------------------------------------
+
+The research question at the center of this thesis — how does a RAG+MCP architecture compare to alternatives for enterprise knowledge access? — is simultaneously a design question (how should the system be built?) and an evaluation question (how does the system perform?). This dual nature requires a research paradigm that can accommodate both artifact construction and empirical evaluation within a single coherent framework.
+
+We adopt \textbf{Design Science Research} (DSR), as formalized by \citet{Hevner2004} and further developed by \citet{Peffers2007}. DSR is a research paradigm in Information Systems and Engineering that frames research as the creation of purposeful \textit{artifacts} — constructs, models, methods, and instantiations — that solve real-world problems. The artifact is not merely a deliverable; it is the primary vehicle through which knowledge is generated and communicated. DSR is appropriate for this thesis for three reasons:
+
+\begin{enumerate}
+  \item The primary output is a designed system artifact (AntiGravity) whose design decisions constitute the research contribution.
+  \item The artifact is evaluated against a real organizational problem in its natural context (DNSI / SharePoint CERP), not against a synthetic benchmark.
+  \item The research is expected to produce both prescriptive knowledge (design principles that generalize beyond the specific artifact) and descriptive knowledge (empirical evaluation results that inform future practitioners).
+\end{enumerate}
+
+Alternative paradigms were considered and rejected. A pure experiment approach would have treated the artifact as a black box and focused exclusively on outcome metrics, neglecting the architectural and design contributions. A case study approach would have produced rich qualitative understanding but insufficient empirical rigor for the quantitative evaluation required by the research questions. Action research would have entailed a more iterative, participatory process with DNSI stakeholders than was operationally feasible.
+
+%------------------------------------------------------------------------------
+\section{DSR Cycles Applied to This Thesis}
+\label{sec:method-cycles}
+%------------------------------------------------------------------------------
+
+\citet{Hevner2007} describe DSR as operating through three interconnected cycles. Table~\ref{tab:dsr-cycles} maps each cycle to the specific activities of this thesis.
+
+\begin{table}[H]
+\centering
+\caption{Design Science Research cycles applied to this thesis}
+\label{tab:dsr-cycles}
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{DSR Cycle} & \textbf{General Definition} & \textbf{Application in This Thesis} \\
+\midrule
+Relevance Cycle & Connects the research to the real-world context that motivates the problem & DNSI information access problem; SharePoint as knowledge repository; operational friction analysis \\
+Design Cycle & Iterative construction and evaluation of the artifact & AntiGravity architecture design; chunking strategy selection; retrieval optimization; UI design \\
+Rigor Cycle & Connects research to the knowledge base of existing theory and method & RAG literature (Lewis 2020, Gao 2024); MCP specification; DSR methodology; evaluation frameworks (RAGAS, SUS, TAM) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Research Design Overview}
+\label{sec:method-design}
+%------------------------------------------------------------------------------
+
+The research proceeds through five phases, as illustrated in Figure~\ref{fig:research-design}. Each phase has clearly defined inputs, outputs, and validation criteria.
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.9\textwidth}{
+\textbf{Phase 1: Problem Formulation}\\
+Input: Organizational context (DNSI) + Literature review\\
+Output: Research questions, hypotheses, evaluation protocol design\\[0.3cm]
+$\downarrow$\\[0.3cm]
+\textbf{Phase 2: Artifact Design}\\
+Input: Requirements analysis + Literature on RAG, MCP, security\\
+Output: AntiGravity system architecture + Design decisions\\[0.3cm]
+$\downarrow$\\[0.3cm]
+\textbf{Phase 3: Artifact Construction}\\
+Input: System architecture + Technology stack\\
+Output: Working AntiGravity implementation\\[0.3cm]
+$\downarrow$\\[0.3cm]
+\textbf{Phase 4: Evaluation}\\
+Input: Benchmark dataset + Experimental protocol + User study\\
+Output: Quantitative and qualitative evaluation results\\[0.3cm]
+$\downarrow$\\[0.3cm]
+\textbf{Phase 5: Analysis and Contribution}\\
+Input: Evaluation results\\
+Output: Hypothesis testing, design principles, limitations, future work
+}}
+\caption{Research design: five phases of the DSR process}
+\label{fig:research-design}
+\end{figure}
+
+%------------------------------------------------------------------------------
+\section{Evaluation Methodology}
+\label{sec:method-evaluation}
+%------------------------------------------------------------------------------
+
+The evaluation of the AntiGravity system follows a four-dimensional protocol designed to provide a comprehensive assessment of both the technical and human-centered aspects of the system. Each dimension is described below.
+
+\subsection{Experimental Conditions}
+
+The comparative evaluation uses three experimental conditions to answer RQ1:
+
+\begin{itemize}
+  \item \textbf{Condition A — LLM Alone:} Mistral 7B model accessed directly, without retrieval augmentation. Queries are answered from parametric knowledge only.
+  \item \textbf{Condition B — Naive RAG:} The same Mistral 7B model with direct FAISS retrieval (no MCP layer, no re-ranking, standard top-$k$ injection).
+  \item \textbf{Condition C — RAG+MCP (AntiGravity):} The full system as designed — MCP-mediated retrieval with ACL enforcement, re-ranking, and generation via Mistral 7B.
+\end{itemize}
+
+Comparing C to A isolates the total contribution of the RAG+MCP architecture. Comparing C to B isolates the specific contribution of the MCP layer and the re-ranking module. All conditions use the same underlying language model (Mistral 7B Instruct) with identical generation parameters (temperature=0, max\_tokens=512) to ensure that observed differences are attributable to the architecture, not to model variation.
+
+\subsection{Benchmark Dataset Construction}
+
+A domain-specific benchmark dataset is constructed from the DNSI SharePoint corpus following this protocol:
+
+\begin{enumerate}
+  \item \textbf{Document sampling:} A stratified sample of documents is drawn from the SharePoint corpus, covering the major document categories present (technical documentation, procedural guides, security policies, project reports).
+  \item \textbf{Question generation:} For each sampled document, three types of questions are generated: (i) factoid questions with a single-document answer; (ii) multi-hop questions requiring synthesis across two documents; (iii) unanswerable questions whose answer is not in the corpus.
+  \item \textbf{Ground-truth annotation:} Each question is annotated with (a) the correct answer, (b) the set of relevant document chunks (passage-level ground truth), and (c) an answerability label.
+  \item \textbf{Quality control:} Two independent annotators evaluate each question-answer pair. Inter-annotator agreement is measured with Cohen's $\kappa$. Pairs with $\kappa < 0.6$ are reviewed and revised.
+\end{enumerate}
+
+The target benchmark size is $N = 50$ question-answer pairs (40 answerable, 10 unanswerable), which is sufficient for reporting metric distributions with 95\% confidence intervals, given the exploratory nature of this proof-of-concept evaluation.
+
+\subsection{Retrieval Evaluation Protocol}
+
+Retrieval quality is measured against the ground-truth relevant chunks for each benchmark question. The following metrics are computed for each experimental condition (B and C):
+
+\begin{align}
+\text{Precision@K} &= \frac{|\text{Relevant} \cap \text{Retrieved}@K|}{K} \label{eq:precision}\\[6pt]
+\text{Recall@K} &= \frac{|\text{Relevant} \cap \text{Retrieved}@K|}{|\text{Relevant}|} \label{eq:recall}\\[6pt]
+\text{MRR} &= \frac{1}{|Q|} \sum_{i=1}^{|Q|} \frac{1}{\text{rank}_i} \label{eq:mrr}\\[6pt]
+\text{nDCG@K} &= \frac{\text{DCG@K}}{\text{IDCG@K}}, \quad \text{where DCG@K} = \sum_{i=1}^{K} \frac{\text{rel}_i}{\log_2(i+1)} \label{eq:ndcg}
+\end{align}
+
+Metrics are reported for $K \in \{1, 3, 5, 10\}$. Statistical significance is assessed with a paired Wilcoxon signed-rank test ($\alpha = 0.05$) comparing Condition B (Naive RAG) to Condition C (RAG+MCP).
+
+\subsection{Generation Evaluation Protocol}
+
+Generation quality is assessed across all three conditions using a combination of automated metrics (RAGAS) and human evaluation:
+
+\paragraph{Automated metrics (RAGAS):}
+\begin{itemize}
+  \item Faithfulness: proportion of response claims grounded in retrieved context (Eq.~\ref{eq:faithfulness})
+  \item Answer Relevancy: semantic similarity between response and ground-truth answer
+  \item Context Precision and Context Recall (conditions B and C only)
+\end{itemize}
+
+\paragraph{Hallucination rate (human annotation):}
+Each generated response is manually evaluated by two independent annotators for the presence of hallucinated claims (claims that contradict or are absent from the source documents). The hallucination rate is defined as:
+\begin{equation}
+  \text{Hallucination Rate} = \frac{|\text{Responses with} \geq 1 \text{ hallucinated claim}|}{|Q|}
+  \label{eq:hallucination}
+\end{equation}
+
+All generation experiments are run with temperature=0 (deterministic decoding) to ensure reproducibility. To assess variance introduced by prompt formulation, each query is run with two prompt variants and the metric range is reported alongside the mean.
+
+\subsection{System Performance Evaluation Protocol}
+
+The system is instrumented with timing middleware at the following pipeline boundaries: (1) query receipt; (2) query encoding completion; (3) FAISS retrieval completion; (4) re-ranking completion; (5) MCP context assembly completion; (6) Mistral AI response completion; (7) response delivery.
+
+Performance metrics are collected over $N=200$ representative queries executed in sequence:
+
+\begin{itemize}
+  \item End-to-end latency: P50, P95, P99 (milliseconds)
+  \item Component-level latency breakdown: encoding, retrieval, re-ranking, MCP overhead, generation
+  \item Throughput: queries per second under simulated concurrent load (5, 10, 20 concurrent users)
+  \item Memory footprint: FAISS index resident memory, model memory
+\end{itemize}
+
+The MCP protocol overhead is isolated by comparing equivalent retrieval operations executed via the MCP server versus direct API calls.
+
+\subsection{User Evaluation Protocol}
+
+The user study is conducted with DNSI employees (target $N \geq 10$) following a structured protocol:
+
+\begin{enumerate}
+  \item \textbf{Task-based evaluation:} Each participant completes five representative business tasks using (a) the current SharePoint search interface and (b) the AntiGravity assistant. Task order is counterbalanced. Performance is measured by task completion rate and time-on-task.
+  \item \textbf{SUS questionnaire:} After each system, participants complete the 10-item SUS questionnaire.
+  \item \textbf{TAM questionnaire:} Participants complete a validated TAM instrument measuring perceived usefulness and perceived ease of use.
+  \item \textbf{Semi-structured interview:} A 15-minute qualitative interview explores trust, limitations perceived, and adoption barriers.
+\end{enumerate}
+
+Given the constraint of a small sample ($N < 30$), SUS and TAM scores are reported with confidence intervals using bootstrapping. Qualitative interview data is analyzed thematically \citep{Braun2006}.
+
+%------------------------------------------------------------------------------
+\section{Validity and Reliability}
+\label{sec:method-validity}
+%------------------------------------------------------------------------------
+
+\begin{table}[H]
+\centering
+\caption{Threats to validity and mitigation strategies}
+\label{tab:validity}
+\begin{tabularx}{\textwidth}{@{}llXX@{}}
+\toprule
+\textbf{Threat} & \textbf{Type} & \textbf{Description} & \textbf{Mitigation} \\
+\midrule
+Small benchmark (N=50) & Internal validity & Insufficient statistical power & Report confidence intervals; acknowledge as limitation; prioritize effect sizes \\
+Evaluator bias (hallucination annotation) & Internal validity & Annotator subjectivity & Double annotation; Cohen's $\kappa$ reported; resolution protocol \\
+Single-organization corpus & External validity & DNSI-specific vocabulary and structure & Document corpus characteristics; provide replication protocol \\
+LLM non-determinism & Reliability & Temperature>0 variation & Set temperature=0; report results with two prompt variants \\
+Small user study (N≥10) & External validity & Insufficient for statistical generalization & Mixed methods; bootstrapped CIs; qualitative depth compensates \\
+Temporal validity & External validity & MCP standard may evolve & Document exact MCP version used; note protocol version dependency \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%------------------------------------------------------------------------------
+\section{Ethical Considerations}
+\label{sec:method-ethics}
+%------------------------------------------------------------------------------
+
+This research involves human participants (user study) and organizational data (DNSI documents). The following ethical protocols are applied:
+
+\paragraph{Informed consent.} All user study participants are provided with a written information sheet and provide written consent prior to participation. Participation is voluntary and participants may withdraw at any time.
+
+\paragraph{Data anonymization.} User study responses are stored anonymously. No individual-level performance data is associated with participant names in any reported result.
+
+\paragraph{Confidentiality agreement.} In accordance with school guidelines \citep{AivancityGuide2025}, a confidentiality agreement is in place between the student, the DNSI, and Aivancity, governing the treatment of organizational documents and the scope of permissible disclosure.
+
+\paragraph{AI tool declaration.} Portions of the thesis writing process were assisted by Claude (Anthropic), a generative AI tool. All uses are documented in Annex~E in compliance with Aivancity's policy on generative AI use \citep{AivancityGuide2025}. All analysis, interpretation, and critical reasoning are the intellectual work of the author.
+
+\paragraph{Responsible AI.} The AntiGravity system is designed with responsible deployment principles in mind: user queries are not logged beyond session scope; model outputs are explicitly labeled as AI-generated; the system provides source citations to enable user verification of all factual claims.
+
+%------------------------------------------------------------------------------
+\section{Chapter Summary}
+\label{sec:method-summary}
+%------------------------------------------------------------------------------
+
+This chapter has established the methodological foundation of the thesis. The Design Science Research paradigm grounds the work in a recognized framework for artifact-generating research. The four-dimensional evaluation protocol (retrieval, generation, system, user) provides comprehensive coverage of the research questions at appropriate levels of rigor. The validity analysis acknowledges the real constraints of an enterprise research context — small benchmark, single organization, limited user study — and documents mitigation strategies for each threat. The following chapter presents the system design and architecture produced in Phase 2 of the DSR process.
