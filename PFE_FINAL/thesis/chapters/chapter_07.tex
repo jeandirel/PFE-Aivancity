@@ -4,7 +4,7 @@
 \chapter{Discussion}
 \label{chap:discussion}
 
-The preceding chapter defined the evaluation protocol and the structure of the expected results of the AntiGravity evaluation. This chapter discusses those expected findings in relation to the research questions, critically assesses what the thesis does and does not demonstrate, examines the limitations of the work, and discusses the implications for both researchers and practitioners. The quantitative interpretation is to be finalized once the measurements of Chapter~\ref{chap:evaluation} are complete.
+The preceding chapter defined the evaluation protocol and the structure of the expected results of the AntiGravity evaluation. This chapter discusses those expected findings in relation to the research questions, critically assesses what the report does and does not demonstrate, examines the limitations of the work, and discusses the implications for both researchers and practitioners. The quantitative interpretation is to be finalized once the measurements of Chapter~\ref{chap:evaluation} are complete.
 
 %------------------------------------------------------------------------------
 \section{Interpretation of Results}
@@ -27,11 +27,11 @@ However, the improvement over Naive RAG is expected to be smaller than the impro
 
 \subsection{On the Value of MCP Specifically}
 
-A critical question for this thesis is whether MCP itself — as opposed to the RAG architecture in general — makes a measurable contribution. This is the hardest question to answer empirically, because MCP's primary contributions (standardization, security boundary, maintainability) are not directly measurable as retrieval or generation quality metrics.
+A critical question for this PFE report is whether MCP itself — as opposed to the RAG architecture in general — makes a measurable contribution. This is the hardest question to answer empirically, because MCP's primary contributions (standardization, security boundary, maintainability) are not directly measurable as retrieval or generation quality metrics.
 
 The ablation study (Section~\ref{sec:eval-ablation}) provides indirect evidence: the comparison of A3 (dense retrieval + re-ranking, no MCP) vs. A4 (full AntiGravity with MCP) isolates the marginal contribution of the MCP layer. If the difference in P@5 or faithfulness between A3 and A4 is not statistically significant — which is the expected finding — this should not be interpreted as MCP providing no value. It should be interpreted as MCP providing value in dimensions that retrieval/generation metrics do not capture: security architecture, connector standardization, and operational maintainability.
 
-This distinction matters for the scientific interpretation of the thesis. The claim is not that MCP improves RAG retrieval quality. The claim is that MCP provides a principled architectural boundary for security enforcement, and that this architectural property is valuable in enterprise contexts in ways that micro-benchmarks cannot fully capture.
+This distinction matters for the scientific interpretation of the report. The claim is not that MCP improves RAG retrieval quality. The claim is that MCP provides a principled architectural boundary for security enforcement, and that this architectural property is valuable in enterprise contexts in ways that micro-benchmarks cannot fully capture.
 
 %------------------------------------------------------------------------------
 \section{Strengths of the Proposed Architecture}
@@ -51,7 +51,7 @@ This distinction matters for the scientific interpretation of the thesis. The cl
 \label{sec:disc-limitations}
 %------------------------------------------------------------------------------
 
-This section presents the limitations of the thesis with the same rigor applied to its strengths.
+This section presents the limitations of the report with the same rigor applied to its strengths.
 
 \subsection{Evaluation Limitations}
 
@@ -110,7 +110,7 @@ The deployment of the AntiGravity prototype in the DNSI's corporate network envi
 \label{sec:disc-generalizability}
 %------------------------------------------------------------------------------
 
-The AntiGravity architecture and the findings of this thesis are generalizable to other organizations under the following conditions:
+The AntiGravity architecture and the findings of this PFE report are generalizable to other organizations under the following conditions:
 
 \begin{enumerate}
   \item \textbf{SharePoint as the primary knowledge repository:} The connector design and ACL enforcement mechanism are specific to SharePoint and Microsoft Graph API. Organizations using Confluence, Box, Google Drive, or other platforms would require a different MCP server implementation, but the architectural pattern (MCP boundary for security enforcement) is fully transferable.
@@ -146,15 +146,15 @@ P8 & CIFRE doctoral continuation & Investigate MCP as a universal enterprise AI 
 \end{tabularx}
 \end{table}
 
-\paragraph{CIFRE doctoral direction.} This thesis establishes a foundation for a CIFRE doctoral research program that would investigate three open scientific questions: (1) Can MCP be formalized as a universal integration standard for enterprise AI, and what security-theoretic guarantees can be proven about MCP-mediated architectures? (2) How do RAG+MCP systems scale under multi-tenant, multi-source, and multi-modal knowledge conditions? (3) What are the organizational change management factors that determine enterprise AI assistant adoption, and how can system design choices mitigate adoption barriers?
+\paragraph{CIFRE doctoral direction.} This PFE report establishes a foundation for a CIFRE doctoral research program that would investigate three open scientific questions: (1) Can MCP be formalized as a universal integration standard for enterprise AI, and what security-theoretic guarantees can be proven about MCP-mediated architectures? (2) How do RAG+MCP systems scale under multi-tenant, multi-source, and multi-modal knowledge conditions? (3) What are the organizational change management factors that determine enterprise AI assistant adoption, and how can system design choices mitigate adoption barriers?
 
 %------------------------------------------------------------------------------
 \section{Chapter Summary}
 \label{sec:disc-summary}
 %------------------------------------------------------------------------------
 
-This chapter has provided a critical analysis of the AntiGravity system and the thesis research. On the architectural dimensions of the primary research question, the RAG+MCP design provides security (structural ACL enforcement) and traceability (mandatory source citations) by construction; the reliability dimension (reduced hallucination) is expected to be confirmed by the evaluation of Chapter~\ref{chap:evaluation}, whose quantitative results are pending. MCP's specific contribution is primarily architectural (security boundary, standardization) rather than metric-measurable (retrieval precision, faithfulness), consistent with what the MCP specification claims.
+This chapter has provided a critical analysis of the AntiGravity system and the report research. On the architectural dimensions of the primary research question, the RAG+MCP design provides security (structural ACL enforcement) and traceability (mandatory source citations) by construction; the reliability dimension (reduced hallucination) is expected to be confirmed by the evaluation of Chapter~\ref{chap:evaluation}, whose quantitative results are pending. MCP's specific contribution is primarily architectural (security boundary, standardization) rather than metric-measurable (retrieval precision, faithfulness), consistent with what the MCP specification claims.
 
-The thesis's limitations are significant but bounded: the evaluation is a proof-of-concept demonstration on a single organization's corpus with a small benchmark, not a universal performance characterization. The deployment has a known infrastructure gap (CPU inference latency) that is resolvable with hardware investment. These limitations are typical of applied AI engineering research at the Master's level and do not undermine the validity of the architectural contributions.
+The report's limitations are significant but bounded: the evaluation is a proof-of-concept demonstration on a single organization's corpus with a small benchmark, not a universal performance characterization. The deployment has a known infrastructure gap (CPU inference latency) that is resolvable with hardware investment. These limitations are typical of applied AI engineering research at the Master's level and do not undermine the validity of the architectural contributions.
 
-The following chapter synthesizes the thesis contributions and answers each research question explicitly.
+The following chapter synthesizes the report contributions and answers each research question explicitly.

@@ -15,7 +15,7 @@ The symptoms of this gap are well documented in the enterprise knowledge managem
 
 Microsoft SharePoint, an enterprise content management platform used by hundreds of millions of users worldwide \citep{Microsoft2024}, is a paradigmatic example of this tension. SharePoint provides robust document storage, versioning, and access control capabilities, but its search functionality is fundamentally lexical: it matches keywords without understanding intent, context, or semantic proximity. A user querying "what are the security requirements for deploying a new application?" may receive thousands of matching documents, ranked by keyword frequency, with no mechanism for synthesizing a coherent, sourced answer across the relevant subset.
 
-This thesis originates in a concrete instantiation of this problem. The \gls{dnsi} — the information systems directorate of a large organization — maintains an extensive documentation corpus on its SharePoint platform (SharePoint \gls{cerp}). This corpus includes technical architecture documents, security policies, operational procedures, and project deliverables. Business units within the DNSI face daily challenges in locating, interpreting, and synthesizing information from this corpus, a friction that imposes measurable operational and decision-making costs.
+This PFE report originates in a concrete instantiation of this problem. The \gls{dnsi} — the information systems directorate of a large organization — maintains an extensive documentation corpus on its SharePoint platform (SharePoint \gls{cerp}). This corpus includes technical architecture documents, security policies, operational procedures, and project deliverables. Business units within the DNSI face daily challenges in locating, interpreting, and synthesizing information from this corpus, a friction that imposes measurable operational and decision-making costs.
 
 %------------------------------------------------------------------------------
 \section{The Promise and Limits of Large Language Models}
@@ -58,7 +58,7 @@ The architectural significance of MCP is the introduction of a stable abstractio
 
 Beyond maintainability, MCP's architecture introduces properties particularly relevant to enterprise environments: the server-side context management allows access control to be enforced at the data boundary (before context is passed to the AI model), making permission enforcement structural rather than advisory. The protocol's tool-calling semantics also enable richer interactions than simple document retrieval — an MCP server can expose structured operations (search, filter, navigate document hierarchies) that a naive retrieval connector cannot.
 
-However, MCP is a recent standard. Its practical value in production enterprise deployments — particularly regarding the claimed benefits of security, interoperability, and maintainability — has not yet been rigorously evaluated in a published academic study. This empirical gap constitutes the primary scientific motivation for this thesis.
+However, MCP is a recent standard. Its practical value in production enterprise deployments — particularly regarding the claimed benefits of security, interoperability, and maintainability — has not yet been rigorously evaluated in a published academic study. This empirical gap constitutes the primary scientific motivation for this PFE report.
 
 %------------------------------------------------------------------------------
 \section{Research Problem and Questions}
@@ -88,9 +88,9 @@ This primary question is operationalized through four subsidiary research questi
 \label{sec:intro-contributions}
 %------------------------------------------------------------------------------
 
-This thesis adopts the \textbf{Design Science Research} (DSR) paradigm \citep{Hevner2004}, which frames research as the construction and rigorous evaluation of a purposeful artifact. The artifact — the AntiGravity RAG+MCP system — constitutes the primary research output, while the evaluation of that artifact against a real organizational problem constitutes the primary scientific contribution.
+This PFE report adopts the \textbf{Design Science Research} (DSR) paradigm \citep{Hevner2004}, which frames research as the construction and rigorous evaluation of a purposeful artifact. The artifact — the AntiGravity RAG+MCP system — constitutes the primary research output, while the evaluation of that artifact against a real organizational problem constitutes the primary scientific contribution.
 
-The thesis makes the following contributions:
+The report makes the following contributions:
 
 \paragraph{Scientific Contribution 1 (SC1):} A formal comparative evaluation framework for RAG+MCP architectures in enterprise settings, operationalized through a controlled experiment on a real SharePoint corpus with three conditions: (A) standalone LLM, (B) naive RAG, (C) RAG+MCP. This is, to the best of our knowledge, the first published empirical study to evaluate MCP-grounded RAG against baseline architectures on a private enterprise document corpus.
 
@@ -111,20 +111,20 @@ The thesis makes the following contributions:
 \label{sec:intro-scope}
 %------------------------------------------------------------------------------
 
-This thesis addresses the design, implementation, and evaluation of a conversational assistant for enterprise document access. The following boundaries apply:
+This PFE report addresses the design, implementation, and evaluation of a conversational assistant for enterprise document access. The following boundaries apply:
 
 \textbf{In scope:} Design of the AntiGravity architecture; implementation of the RAG+MCP pipeline; evaluation against three experimental conditions; retrieval, generation, system, and user evaluation; security architecture analysis; DSR-grounded methodology.
 
 \textbf{Out of scope:} Training or fine-tuning of language models; multi-tenant deployment; real-time SharePoint delta synchronization; extension to data sources beyond SharePoint; production-scale infrastructure optimization. These are identified as directions for future work in Chapter~\ref{chap:discussion}.
 
 %------------------------------------------------------------------------------
-\section{Thesis Structure}
+\section{Report Structure}
 \label{sec:intro-structure}
 %------------------------------------------------------------------------------
 
-The remainder of this thesis is organized as follows:
+The remainder of this PFE report is organized as follows:
 
-\textbf{Chapter~\ref{chap:background}} establishes the theoretical and empirical foundations of the work through a comprehensive review of the literature on LLMs, RAG architectures, vector search, enterprise knowledge management, the Model Context Protocol, and enterprise AI security. It concludes by identifying the research gap this thesis fills.
+\textbf{Chapter~\ref{chap:background}} establishes the theoretical and empirical foundations of the work through a comprehensive review of the literature on LLMs, RAG architectures, vector search, enterprise knowledge management, the Model Context Protocol, and enterprise AI security. It concludes by identifying the research gap this PFE report fills.
 
 \textbf{Chapter~\ref{chap:methodology}} formalizes the research methodology, grounding the approach in Design Science Research, and specifies the complete evaluation protocol for each of the four evaluation dimensions.
 
@@ -136,4 +136,4 @@ The remainder of this thesis is organized as follows:
 
 \textbf{Chapter~\ref{chap:discussion}} provides a critical discussion of the results, analyzing strengths, weaknesses, limitations, deployment challenges, security gaps, and the generalizability of the findings.
 
-\textbf{Chapter~\ref{chap:conclusion}} synthesizes the contributions of the thesis, provides explicit answers to each research question, and outlines the directions for future work, including a proposed research agenda for CIFRE doctoral continuation.
+\textbf{Chapter~\ref{chap:conclusion}} synthesizes the contributions of the report, provides explicit answers to each research question, and outlines the directions for future work, including a proposed research agenda for CIFRE doctoral continuation.
