@@ -52,28 +52,36 @@ The research proceeds through five phases, as illustrated in Figure~\ref{fig:res
 
 \begin{figure}[H]
 \centering
-\fbox{\parbox{0.9\textwidth}{
-\textbf{Phase 1: Problem Formulation}\\
-Input: Organizational context (DNSI) + Literature review\\
-Output: Research questions, hypotheses, evaluation protocol design\\[0.3cm]
-$\downarrow$\\[0.3cm]
-\textbf{Phase 2: Artifact Design}\\
-Input: Requirements analysis + Literature on RAG, MCP, security\\
-Output: AntiGravity system architecture + Design decisions\\[0.3cm]
-$\downarrow$\\[0.3cm]
-\textbf{Phase 3: Artifact Construction}\\
-Input: System architecture + Technology stack\\
-Output: Working AntiGravity implementation\\[0.3cm]
-$\downarrow$\\[0.3cm]
-\textbf{Phase 4: Evaluation}\\
-Input: Benchmark dataset + Experimental protocol + User study\\
-Output: Quantitative and qualitative evaluation results\\[0.3cm]
-$\downarrow$\\[0.3cm]
-\textbf{Phase 5: Analysis and Contribution}\\
-Input: Evaluation results\\
-Output: Hypothesis testing, design principles, limitations, future work
-}}
-\caption{Research design: five phases of the DSR process}
+\begin{tikzpicture}[
+  phasebox/.style={draw, rounded corners=2pt, text width=0.84\textwidth,
+                   align=center, inner ysep=6pt, font=\small, fill=lightgray},
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  node distance=0.4cm
+]
+\node[phasebox] (p1) {\textbf{Phase 1 --- Problem Formulation}\\[1pt]
+  {\footnotesize\itshape DNSI organizational context, literature review
+   $\;\Rightarrow\;$ research questions, hypotheses, evaluation protocol}};
+\node[phasebox, below=of p1] (p2) {\textbf{Phase 2 --- Artifact Design}\\[1pt]
+  {\footnotesize\itshape Requirements analysis, literature on RAG/MCP/security
+   $\;\Rightarrow\;$ system architecture, design decisions}};
+\node[phasebox, below=of p2] (p3) {\textbf{Phase 3 --- Artifact Construction}\\[1pt]
+  {\footnotesize\itshape Architecture, technology stack
+   $\;\Rightarrow\;$ working AntiGravity implementation}};
+\node[phasebox, below=of p3] (p4) {\textbf{Phase 4 --- Evaluation}\\[1pt]
+  {\footnotesize\itshape Benchmark dataset, experimental protocol, user study
+   $\;\Rightarrow\;$ quantitative and qualitative results}};
+\node[phasebox, below=of p4] (p5) {\textbf{Phase 5 --- Analysis and Contribution}\\[1pt]
+  {\footnotesize\itshape Evaluation results
+   $\;\Rightarrow\;$ hypothesis testing, design principles, limitations, future work}};
+
+\foreach \a/\b in {p1/p2, p2/p3, p3/p4, p4/p5}
+  \draw[flow] (\a) -- (\b);
+
+\draw[flow, dashed] (p4.east) -- ++(0.7,0) |- (p2.east)
+  node[pos=0.25, right=2pt, font=\scriptsize\itshape, align=left, rotate=90, anchor=south]
+  {design cycle iterations};
+\end{tikzpicture}
+\caption{Research design: five phases of the DSR process. Each phase transforms its inputs (left of the arrow) into validated outputs (right); the dashed edge marks the iterative design--evaluation loop of the DSR design cycle.}
 \label{fig:research-design}
 \end{figure}
 
