@@ -22,13 +22,13 @@ The self-attention mechanism can be formalized as:
 \end{equation}
 where $Q$, $K$, and $V$ are query, key, and value matrices respectively, and $d_k$ is the dimensionality of the key vectors. The scaling factor $\sqrt{d_k}$ prevents vanishing gradients in high-dimensional spaces.
 
-Modern large-scale language models — including GPT-4 \citep{OpenAI2023}, Mistral 7B \citep{Jiang2023}, Llama 2/3 \citep{Touvron2023}, and Claude \citep{Anthropic2023} — are decoder-only or encoder-decoder Transformers trained via next-token prediction on datasets of trillions of tokens. The emergent capabilities observed at scale — instruction following, chain-of-thought reasoning, code generation, multi-step problem solving — are not explicitly programmed but arise from the optimization process applied at sufficient scale \citep{Wei2022}.
+Modern large-scale language models — including GPT-4 \citep{OpenAI2023}, Mistral 7B \citep{Jiang2023}, Llama 2 \citep{Touvron2023}, and Claude \citep{Anthropic2023} — are decoder-only or encoder-decoder Transformers trained via next-token prediction on datasets of trillions of tokens. The emergent capabilities observed at scale — instruction following, chain-of-thought reasoning, code generation, multi-step problem solving — are not explicitly programmed but arise from the optimization process applied at sufficient scale \citep{Wei2022}.
 
 \subsection{Parametric vs Non-Parametric Knowledge}
 
 A foundational distinction for understanding LLM limitations is between \textit{parametric} and \textit{non-parametric} knowledge \citep{Lewis2020}. Parametric knowledge is information encoded in a model's weights during training — it is fixed, distributed, implicit, and inaccessible without inference. Non-parametric knowledge is information stored in explicit, updatable external databases — structured, addressable, and modifiable without retraining.
 
-LLMs are parametic knowledge stores. Everything they "know" is compressed into billions of floating-point weights through the training process. This has several important implications:
+LLMs are parametric knowledge stores. Everything they "know" is compressed into billions of floating-point weights through the training process. This has several important implications:
 
 \begin{itemize}
   \item \textbf{Knowledge is probabilistic, not factual.} The model learns statistical patterns in text, not ground truth facts. Information that is rare, contradictory, or absent in the training corpus will be poorly represented or incorrectly recalled.
@@ -38,7 +38,7 @@ LLMs are parametic knowledge stores. Everything they "know" is compressed into b
 
 \subsection{The Hallucination Problem}
 
-Hallucination — the generation of confident, fluent, but factually incorrect text — is the most operationally significant limitation of LLMs for enterprise deployment. \citet{Ji2023} provide a taxonomy of hallucination types, distinguishing between intrinsic hallucinations (contradictions of source material) and extrinsic hallucinations (unverifiable claims absent from any source). \citet{Maynez2020} demonstrate that even state-of-the-art summarization models hallucinate in 30\% or more of generated summaries.
+Hallucination — the generation of confident, fluent, but factually incorrect text — is the most operationally significant limitation of LLMs for enterprise deployment. \citet{Ji2023} provide a taxonomy of hallucination types, distinguishing between intrinsic hallucinations (contradictions of source material) and extrinsic hallucinations (unverifiable claims absent from any source). \citet{Maynez2020} show that even state-of-the-art abstractive summarization models hallucinate content in a substantial proportion of the summaries they generate.
 
 The underlying mechanism of hallucination is partially understood. Models optimize for textual fluency and statistical plausibility, not factual accuracy. When asked about information that is rare, ambiguous, or absent in training data, the model continues to generate plausible text — because that is what it was trained to do — regardless of whether the generated content is grounded in fact \citep{Rawte2023}.
 
@@ -80,7 +80,7 @@ The central insight of this architecture is that the retrieval step \textit{grou
 
 \subsection{RAG Variants and Evolution}
 
-The three-year period following Lewis et al.'s foundational work has seen rapid architectural evolution. \citet{Gao2024} organize this evolution into three generations:
+The years since Lewis et al.'s foundational work have seen rapid architectural evolution. \citet{Gao2024} organize this evolution into three generations:
 
 \paragraph{Naive RAG.} The direct implementation of the Lewis et al. pipeline: retrieve, then generate. Simple and efficient, but susceptible to retrieval failure (the generation can only be as good as what was retrieved) and context stuffing (injecting low-quality retrieved passages that confuse the model rather than grounding it).
 
@@ -109,7 +109,7 @@ The Model Context Protocol directly targets this third limitation, and its archi
 
 The retrieval step in a RAG pipeline depends on the ability to represent both queries and documents as dense vectors in a shared semantic space, such that similar meanings produce geometrically proximate representations. This requires an \textit{embedding model} — a neural encoder that maps variable-length text to fixed-dimensional vectors.
 
-The field has converged on bi-encoder architectures trained with contrastive objectives \citep{Karpukhin2020DPR}. Models such as \texttt{sentence-transformers/all-MiniLM-L6-v2} \citep{Reimers2019}, \texttt{text-embedding-ada-002} (OpenAI), and \texttt{e5-large} \citep{Wang2022} produce embeddings that capture semantic similarity significantly better than lexical representations (TF-IDF, BM25) on most open-domain benchmarks. The trade-off between embedding quality and computational cost (embedding dimensionality, model size, inference speed) is a critical engineering decision in any RAG deployment.
+The field has converged on bi-encoder architectures trained with contrastive objectives \citep{Karpukhin2020DPR}. Models such as \texttt{sentence-transformers/all-MiniLM-L6-v2} and \texttt{all-mpnet-base-v2} \citep{Reimers2019}, \texttt{text-embedding-ada-002} (OpenAI), and \texttt{e5-large} \citep{Wang2022} produce embeddings that capture semantic similarity significantly better than lexical representations (TF-IDF, BM25) on most open-domain benchmarks. The trade-off between embedding quality and computational cost (embedding dimensionality, model size, inference speed) is a critical engineering decision in any RAG deployment.
 
 \subsection{FAISS: Scalable Similarity Search}
 
@@ -124,6 +124,7 @@ The \textit{Facebook AI Similarity Search} (\gls{faiss}) library \citep{Johnson2
 \textbf{Index Type} & \textbf{Precision} & \textbf{Speed} & \textbf{Memory} \\
 \midrule
 \texttt{IndexFlatL2} & Exact (100\%) & Slow (O(n)) & High \\
+\texttt{IndexFlatIP} & Exact (100\%) & Slow (O(n)) & High \\
 \texttt{IndexIVFFlat} & High (95–99\%) & Fast & Moderate \\
 \texttt{IndexHNSW} & High (95–99\%) & Very fast & High \\
 \texttt{IndexIVFPQ} & Moderate (85–95\%) & Very fast & Low \\
@@ -131,7 +132,7 @@ The \textit{Facebook AI Similarity Search} (\gls{faiss}) library \citep{Johnson2
 \end{tabular}
 \end{table}
 
-For the document scales typical of an enterprise SharePoint corpus (thousands to hundreds of thousands of documents), \texttt{IndexFlatL2} (exact search) is computationally feasible and maximally precise, while \texttt{IndexHNSW} provides the best speed-precision trade-off at larger scales. The optimal choice depends on corpus size, query latency requirements, and available memory — all of which must be measured empirically for the specific deployment context.
+For the document scales typical of an enterprise SharePoint corpus (thousands to hundreds of thousands of documents), the flat exact indexes (\texttt{IndexFlatL2} for Euclidean distance, \texttt{IndexFlatIP} for inner product — equivalent to cosine similarity on L2-normalized vectors) are computationally feasible and maximally precise, while \texttt{IndexHNSW} provides the best speed-precision trade-off at larger scales. The optimal choice depends on corpus size, query latency requirements, and available memory — all of which must be measured empirically for the specific deployment context.
 
 \subsection{Re-ranking}
 
@@ -175,10 +176,12 @@ The Model Context Protocol (MCP) \citep{Anthropic2024MCP} was publicly released 
 MCP defines a client-server architecture with three roles:
 
 \begin{itemize}
-  \item \textbf{MCP Host:} The AI application or agent (in our case, the AntiGravity conversational client) that initiates connections and uses capabilities.
-  \item \textbf{MCP Server:} A lightweight process that exposes data and tools to the host through the MCP protocol (in our case, the SharePoint context server).
-  \item \textbf{MCP Transport:} The communication layer between host and server, supporting stdio (for local processes) and HTTP with Server-Sent Events (for networked deployments).
+  \item \textbf{MCP Host:} The AI application or agent (in our case, the AntiGravity conversational application) that coordinates one or more client connections and consumes the exposed capabilities.
+  \item \textbf{MCP Client:} The protocol connector embedded in the host, maintaining a one-to-one session with a server.
+  \item \textbf{MCP Server:} A lightweight process that exposes data and tools to clients through the MCP protocol (in our case, the SharePoint context server).
 \end{itemize}
+
+Client-server communication takes place over a \textit{transport}: stdio for local processes, or HTTP-based streaming transports for networked deployments.
 
 MCP defines three categories of server-exposed capabilities:
 
@@ -234,7 +237,7 @@ These are the questions that Chapter~\ref{chap:evaluation} empirically addresses
 
 \subsection{Information Security Requirements}
 
-Enterprise AI systems operate within information security frameworks that impose binding requirements on data handling, access control, and audit logging. The ISO/IEC 27001 standard \citep{ISO27001} defines a comprehensive Information Security Management System (ISMS) framework whose principles are directly applicable to AI system design: access control (Annex A.9), cryptography (A.10), operations security (A.12), and supplier relationships (A.15) are all implicated in the deployment of a conversational AI system over enterprise document corpora.
+Enterprise AI systems operate within information security frameworks that impose binding requirements on data handling, access control, and audit logging. The ISO/IEC 27001 standard \citep{ISO27001} defines a comprehensive Information Security Management System (ISMS) framework whose principles are directly applicable to AI system design: the Annex~A controls on access control, cryptography, secure operations, and supplier relationships are all implicated in the deployment of a conversational AI system over enterprise document corpora.
 
 The specific security concerns for a RAG-over-SharePoint system include:
 

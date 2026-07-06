@@ -110,16 +110,16 @@ A domain-specific benchmark dataset is constructed from the DNSI SharePoint corp
 
 \begin{enumerate}
   \item \textbf{Document sampling:} A stratified sample of documents is drawn from the SharePoint corpus, covering the major document categories present (technical documentation, procedural guides, security policies, project reports).
-  \item \textbf{Question generation:} For each sampled document, three types of questions are generated: (i) factoid questions with a single-document answer; (ii) multi-hop questions requiring synthesis across two documents; (iii) unanswerable questions whose answer is not in the corpus.
+  \item \textbf{Question generation:} For each sampled document, four types of questions are generated: (i) factoid questions with a single-document answer; (ii) multi-hop questions requiring synthesis across two documents; (iii) procedural questions requiring step-ordered instructions; (iv) unanswerable questions whose answer is not in the corpus (testing the graceful-refusal requirement FR08).
   \item \textbf{Ground-truth annotation:} Each question is annotated with (a) the correct answer, (b) the set of relevant document chunks (passage-level ground truth), and (c) an answerability label.
-  \item \textbf{Quality control:} Two independent annotators evaluate each question-answer pair. Inter-annotator agreement is measured with Cohen's $\kappa$. Pairs with $\kappa < 0.6$ are reviewed and revised.
+  \item \textbf{Quality control:} Two independent annotators evaluate each question-answer pair. Overall inter-annotator agreement is measured with Cohen's $\kappa$; individual pairs on which the annotators disagree are reviewed and revised, and an overall $\kappa < 0.6$ triggers a full re-annotation pass.
 \end{enumerate}
 
-The target benchmark size is $N = 50$ question-answer pairs (40 answerable, 10 unanswerable), which is sufficient for reporting metric distributions with 95\% confidence intervals, given the exploratory nature of this proof-of-concept evaluation.
+The target benchmark size is $N = 50$ question-answer pairs (20 factoid, 15 multi-hop, 10 procedural, 5 unanswerable), which permits reporting metric distributions with bootstrapped 95\% confidence intervals while acknowledging the limited statistical power inherent to this proof-of-concept evaluation (Section~\ref{sec:method-validity}).
 
 \subsection{Retrieval Evaluation Protocol}
 
-Retrieval quality is measured against the ground-truth relevant chunks for each benchmark question. The following metrics are computed for each experimental condition (B and C):
+Retrieval quality is measured against the ground-truth relevant chunks for each benchmark question. The following metrics are computed for each retrieval-based experimental condition (B and C) and for a BM25 lexical baseline included to situate dense retrieval against classical keyword search (H3):
 
 \begin{align}
 \text{Precision@K} &= \frac{|\text{Relevant} \cap \text{Retrieved}@K|}{K} \label{eq:precision}\\[6pt]
@@ -148,11 +148,11 @@ Each generated response is manually evaluated by two independent annotators for 
   \label{eq:hallucination}
 \end{equation}
 
-All generation experiments are run with temperature=0 (deterministic decoding) to ensure reproducibility. To assess variance introduced by prompt formulation, each query is run with two prompt variants and the metric range is reported alongside the mean.
+All generation experiments are run with the system's production decoding configuration (temperature=0.1, fixed random seed) to ensure reproducibility. The difference in hallucination rate between paired conditions is assessed with McNemar's test on the per-query annotations. To assess variance introduced by prompt formulation, each query is run with two prompt variants and the metric range is reported alongside the mean.
 
 \subsection{System Performance Evaluation Protocol}
 
-The system is instrumented with timing middleware at the following pipeline boundaries: (1) query receipt; (2) query encoding completion; (3) FAISS retrieval completion; (4) re-ranking completion; (5) MCP context assembly completion; (6) Mistral AI response completion; (7) response delivery.
+The system is instrumented with timing middleware at the following pipeline boundaries: (1) query receipt; (2) query encoding completion; (3) FAISS retrieval completion; (4) re-ranking completion; (5) MCP context assembly completion; (6) LLM generation completion (local Mistral 7B); (7) response delivery.
 
 Performance metrics are collected over $N=200$ representative queries executed in sequence:
 
@@ -172,7 +172,7 @@ The user study is conducted with DNSI employees (target $N \geq 10$) following a
 \begin{enumerate}
   \item \textbf{Task-based evaluation:} Each participant completes five representative business tasks using (a) the current SharePoint search interface and (b) the AntiGravity assistant. Task order is counterbalanced. Performance is measured by task completion rate and time-on-task.
   \item \textbf{SUS questionnaire:} After each system, participants complete the 10-item SUS questionnaire.
-  \item \textbf{TAM questionnaire:} Participants complete a validated TAM instrument measuring perceived usefulness and perceived ease of use.
+  \item \textbf{TAM questionnaire:} Participants complete a validated TAM instrument measuring perceived usefulness and perceived ease of use, administered for both systems so that AntiGravity can be compared to the incumbent SharePoint search interface.
   \item \textbf{Semi-structured interview:} A 15-minute qualitative interview explores trust, limitations perceived, and adoption barriers.
 \end{enumerate}
 
@@ -188,9 +188,9 @@ The following six hypotheses operationalize the research questions. Each hypothe
 \item \textbf{H1:} The RAG+MCP architecture (Condition C) produces a statistically significantly lower hallucination rate than the standalone LLM (Condition A) on the DNSI benchmark.
 \item \textbf{H2:} The RAG+MCP architecture achieves a RAGAS Faithfulness score $\geq 0.85$ on the benchmark (NFR10).
 \item \textbf{H3:} Dense semantic retrieval (Condition B) achieves higher Precision@5 than BM25 lexical search on the DNSI corpus.
-\item \textbf{H4:} The MCP protocol overhead does not exceed 200~ms at P95 (NFR04 MCP budget).
-\item \textbf{H5:} User acceptance of AntiGravity meets the threshold of SUS $\geq 68$ and TAM Perceived Usefulness significantly higher than self-reported SharePoint satisfaction.
-\item \textbf{H6:} Cross-encoder re-ranking improves MRR over bi-encoder-only retrieval by at least 15\% relative.
+\item \textbf{H4:} The MCP protocol overhead does not exceed 200~ms at P95 (design target derived from the NFR01 end-to-end latency budget).
+\item \textbf{H5:} User acceptance of AntiGravity meets the threshold of SUS $\geq 68$, and its TAM Perceived Usefulness is significantly higher than that of the incumbent SharePoint search interface (both instruments administered in the user study).
+\item \textbf{H6:} Cross-encoder re-ranking improves MRR over bi-encoder-only retrieval by at least 15\% relative, assessed via the ablation study comparing otherwise identical configurations with and without re-ranking (Chapter~\ref{chap:evaluation}).
 \end{itemize}
 
 %------------------------------------------------------------------------------
@@ -209,7 +209,7 @@ The following six hypotheses operationalize the research questions. Each hypothe
 Small benchmark (N=50) & Internal validity & Insufficient statistical power & Report confidence intervals; acknowledge as limitation; prioritize effect sizes \\
 Evaluator bias (hallucination annotation) & Internal validity & Annotator subjectivity & Double annotation; Cohen's $\kappa$ reported; resolution protocol \\
 Single-organization corpus & External validity & DNSI-specific vocabulary and structure & Document corpus characteristics; provide replication protocol \\
-LLM non-determinism & Reliability & Temperature>0 variation & Set temperature=0; report results with two prompt variants \\
+LLM non-determinism & Reliability & Temperature>0 variation & Fixed low temperature (0.1) and fixed seed; report results with two prompt variants \\
 Small user study (N≥10) & External validity & Insufficient for statistical generalization & Mixed methods; bootstrapped CIs; qualitative depth compensates \\
 Temporal validity & External validity & MCP standard may evolve & Document exact MCP version used; note protocol version dependency \\
 \bottomrule

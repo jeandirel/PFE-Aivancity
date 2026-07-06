@@ -123,6 +123,18 @@ Interventions complémentaires réalisées lors de la passe de finalisation :
 
 Aucune valeur expérimentale n'a été ajoutée : les [TBC] du chapitre 6 restent volontairement vides en attendant les mesures réelles (voir §2.1).
 
+## 4ter. Passe anti-hallucinations du 6 juillet 2026
+
+Relecture intégrale (abstract, ch. 1–8, annexes A–E, bibliographie) par quatre relecteurs indépendants, ~45 problèmes corrigés. Principales catégories :
+
+1. **Résultats affirmés sans données** : résumé français (limite CPU présentée comme un constat), ch. 5 (« measured perplexity degradation », « developed and evaluated »), ch. 6–8 (temps verbaux au passé pour l'étude utilisateur et l'annotation jamais menées, « the evidence supports », « this thesis confirms », « early-stage ablation testing », « validated against the evidence base »), annexe B (passé → futur). Tout est reformulé en protocole/attendu/[TBC].
+2. **Faits inventés ou faux** : statistique « 30 % » attachée à Maynez et al. (le papier ne dit pas cela) ; entrée bibliographique Anthropic2023 au titre inexistant (remplacée par le model card réel) ; auteur erroné de Rawte et al. (Abhijit → Amitava Das) ; rôles MCP faux (Host/Server/« Transport » → Host/Client/Server) ; numéros d'annexes ISO 27001:2013 cités avec la référence 2022 ; explication confabulée « WebSocket inspection » pour un blocage SSE ; κ de Cohen « par paire » (statistiquement absurde, y compris un champ JSON avec valeur 0.85 inventée en annexe A).
+3. **Contradictions internes** : température 0 vs 0.1 (ch. 3) ; composition du benchmark (40+10 vs 20/15/10+5 — alignée sur 20 factoid / 15 multi-hop / 10 procédural / 5 sans réponse) ; H4 citant « NFR04 » qui est l'exigence OAuth (→ budget dérivé de NFR01) ; TC1–TC4 mal listés au ch. 8 ; ablation A2 vs A4 au lieu de A3 vs A4 (ch. 7 et note ch. 6) ; NFR06 (50 utilisateurs) intestable avec le protocole (→ 20, périmètre PoC) ; budget de contexte 4096 sans réserve de sortie (équation corrigée, ≈ 2800 tokens ≈ 5 chunks = k) ; K adaptatif vs K=20 fixe ; transport HTTP/SSE vs streamable-http ; latences 20–40 s vs 25–45 s ; décompte « six resolved » contredit par le tableau ; `cross_encoder.rank()` inexistant dans la version pinnée (→ `predict()`) ; docker-compose sans volume `/models` ni `LLM_TEMPERATURE`.
+4. **Hypothèses intestables** (ch. 3) : H3 sans baseline BM25 dans le protocole (ajoutée, cohérente avec la table 6.2) ; H5 sans instrument SharePoint (TAM administré pour les deux systèmes) ; H6 sans ablation dédiée (renvoyée à l'étude d'ablation du ch. 6) ; test de McNemar spécifié pour H1.
+5. **Rhétorique LLM** : ouverture grandiloquente du ch. 1, gabarits « not merely X — it is Y » répétés, aphorismes (« A researcher who cannot honestly criticize... »), auto-satisfaction (« methodological rigor... That is what a PFE requires »), « innovations » → « contributions ». Supprimés ou reformulés.
+
+PDF recompilé : 100 pages, 0 erreur, 0 référence indéfinie.
+
 ---
 
 ## 5. Audit qualité du style

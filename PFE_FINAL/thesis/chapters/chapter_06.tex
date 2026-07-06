@@ -4,7 +4,7 @@
 \chapter{Evaluation and Results}
 \label{chap:evaluation}
 
-This chapter reports the evaluation of the AntiGravity system across the four dimensions defined in Chapter~\ref{chap:methodology}: retrieval quality, generation quality, system performance, and user acceptance. Each section presents the results for the relevant hypotheses and interprets their significance --- including where results fall short of targets.
+This chapter defines the evaluation of the AntiGravity system across the four dimensions defined in Chapter~\ref{chap:methodology}: retrieval quality, generation quality, system performance, and user acceptance. Each section presents the result structure for the relevant hypotheses; the quantitative values are to be filled in upon completion of the experiments ([TBC] placeholders), and their significance --- including where results fall short of targets --- will be interpreted accordingly.
 
 %------------------------------------------------------------------------------
 \section{Evaluation Setup}
@@ -45,7 +45,7 @@ Unanswerable & Answer not in corpus & 5 & 10\% \\
 \end{tabularx}
 \end{table}
 
-Two independent annotators labelled the ground-truth relevant chunks for each question. Inter-annotator agreement was measured using Cohen's $\kappa$; pairs that fell below $\kappa = 0.6$ were adjudicated and revised before inclusion in the benchmark.
+Two independent annotators label the ground-truth relevant chunks for each question. Overall inter-annotator agreement is measured using Cohen's $\kappa$ [TBC]; pairs on which the annotators disagree are adjudicated and revised before inclusion in the benchmark.
 
 % [NOTE FOR AUTHOR: Insert actual Cohen's kappa value here, e.g. kappa = [VALUE],
 %  and specify how many pairs were revised.]
@@ -233,9 +233,10 @@ LLM generation (Mistral 7B, CPU) & [TBC] & [TBC] & --- \\
 
 \paragraph{Hypothesis H4 (MCP latency overhead $<$ 200~ms P95):} The MCP protocol adds a communication layer between the conversational client and the context server. This overhead is the sum of serialization/deserialization cost and network round-trip time on the Docker bridge network. The 200 ms budget defined in the non-functional requirements represents the maximum acceptable overhead for this layer.
 
-% [NOTE FOR AUTHOR: Measure MCP overhead by comparing retrieval latency in two configurations:
-%  (A2) direct FAISS call without MCP wrapper vs. (A4) same FAISS call through MCP transport.
-%  The difference isolates MCP protocol overhead from FAISS search time.
+% [NOTE FOR AUTHOR: Measure MCP overhead by comparing retrieval latency in two configurations
+%  that differ ONLY in the transport: (A3) dense retrieval + re-ranking via direct function
+%  call vs. (A4) the same retrieval + re-ranking pipeline through the MCP transport.
+%  The difference isolates MCP protocol overhead from search and re-ranking time.
 %  Report P50 and P95 and state whether H4 is confirmed or refuted.]
 
 \subsection{Memory Footprint}

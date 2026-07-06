@@ -38,7 +38,7 @@ Orchestration & Docker Compose & Multi-service deployment & 2.20+ \\
 
 \subsection{Hardware Environment}
 
-The prototype was developed and evaluated on the following infrastructure:
+The prototype was developed and deployed on the following infrastructure:
 
 \begin{itemize}
   \item \textbf{Development:} MacBook Pro M2, 16 GB RAM (for code development and unit testing)
@@ -47,7 +47,7 @@ The prototype was developed and evaluated on the following infrastructure:
   \item \textbf{LLM inference:} \texttt{llama-cpp-python} with GGUF quantization (4-bit quantized Mistral 7B), enabling inference on CPU at approximately 3--8 tokens/second
 \end{itemize}
 
-The choice of CPU-only deployment was driven by the DNSI's current infrastructure constraints. The 4-bit quantization of Mistral 7B (\texttt{mistral-7b-instruct-v0.2.Q4\_K\_M.gguf}) reduces memory requirements from $\sim$14 GB (FP16) to $\sim$4.5 GB while incurring a measured perplexity degradation of less than 3\% relative to the full-precision model.
+The choice of CPU-only deployment was driven by the DNSI's current infrastructure constraints. The 4-bit quantization of Mistral 7B (\texttt{mistral-7b-instruct-v0.2.Q4\_K\_M.gguf}) reduces memory requirements from $\sim$14 GB (FP16) to $\sim$4.5 GB, with a perplexity degradation reported to be under 3\% relative to the full-precision model for this quantization level.
 
 %------------------------------------------------------------------------------
 \section{MCP-Compatible SharePoint Connector}
@@ -121,7 +121,7 @@ Full re-indexing of the entire corpus on each ingestion run is computationally e
 \label{sec:impl-mcp-server}
 %------------------------------------------------------------------------------
 
-The MCP Context Server is implemented using the official Anthropic MCP Python SDK. The server exposes the \texttt{search\_documents} tool and the \texttt{rag\_response} prompt template over HTTP/SSE transport.
+The MCP Context Server is implemented using the official Anthropic MCP Python SDK. The server exposes the \texttt{search\_documents} tool and the \texttt{rag\_response} prompt template over the streamable-HTTP transport (initially HTTP/SSE; see the proxy challenge below).
 
 \begin{lstlisting}[language=Python, caption={MCP server tool definition (simplified)}]
 @server.call_tool()
@@ -143,15 +143,18 @@ async def search_documents(name: str, arguments: dict) -> list[TextContent]:
     ]
 
     # Step 4: Re-ranking
-    reranked = cross_encoder.rank(
-        query, [c["text"] for c in authorized_chunks], top_k=5
+    scores = cross_encoder.predict(
+        [(query, c["text"]) for c in authorized_chunks]
     )
+    reranked = sorted(
+        zip(authorized_chunks, scores), key=lambda x: x[1], reverse=True
+    )[:5]
 
     # Step 5: Format context with citations
     return format_context_block(reranked, authorized_chunks)
 \end{lstlisting}
 
-\paragraph{Engineering challenge: MCP transport configuration behind corporate proxy.} The HTTP/SSE transport used by the MCP server was blocked by the corporate proxy's WebSocket inspection policy. The resolution was to configure the MCP server to use the \texttt{streamable-http} transport variant, which is proxy-compatible, rather than the default SSE transport.
+\paragraph{Engineering challenge: MCP transport configuration behind corporate proxy.} The HTTP/SSE transport initially used by the MCP server was broken by the corporate proxy, which buffers and inspects long-lived streaming responses and thereby delays or drops Server-Sent Events. The resolution was to configure the MCP server to use the \texttt{streamable-http} transport variant, which tolerates proxy buffering, rather than the default SSE transport.
 
 %------------------------------------------------------------------------------
 \section{Streamlit Application}
@@ -187,23 +190,23 @@ Table~\ref{tab:impl-challenges} summarizes the significant implementation challe
 \midrule
 Graph API throttling & HTTP 429 on large corpus ingestion & Exponential backoff with jitter & Resolved \\
 Permission inheritance traversal & Silent miss for items at site root & Treat absent permissions as site-default & Resolved \\
-Corporate proxy blocking MCP SSE & WebSocket inspection drops SSE streams & Switch to streamable-http transport & Resolved \\
+Corporate proxy blocking MCP SSE & Proxy buffering breaks SSE streaming & Switch to streamable-http transport & Resolved \\
 TLS certificate chain errors & Corporate proxy self-signed cert & Inject proxy certificate into trust stores & Resolved \\
 Streamlit token loss on rerun & OAuth token lost between interactions & Session state storage + silent refresh & Resolved \\
 FAISS no in-place deletion & Deleted documents require full rebuild & Incremental rebuild on deletion batch & Accepted limitation \\
-Mistral 7B inference latency (CPU) & 20--40s per response on CPU & 4-bit GGUF quantization; response streaming & Mitigated \\
+Mistral 7B inference latency (CPU) & 25--45s per response on CPU (estimated) & 4-bit GGUF quantization; response streaming & Mitigated \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-The most significant unresolved challenge is LLM inference latency on CPU. The 4-bit quantized Mistral 7B generates at approximately 3--8 tokens/second on the available CPU infrastructure, resulting in typical response times of 25--45 seconds for responses of 150--300 tokens. This exceeds NFR01 (P95 $\leq$ 5 seconds) and is the primary performance gap in the current deployment. GPU inference would reduce generation latency to 1--3 seconds. This limitation is discussed in the system performance evaluation (Chapter~\ref{chap:evaluation}) and in the limitations analysis (Chapter~\ref{chap:discussion}).
+The most significant unresolved challenge is LLM inference latency on CPU. The 4-bit quantized Mistral 7B generates at approximately 3--8 tokens/second on the available CPU infrastructure, which translates to estimated response times of 25--45 seconds for responses of 150--300 tokens. This exceeds NFR01 (P95 $\leq$ 5 seconds) and is the primary performance gap in the current deployment. GPU inference would reduce generation latency to 1--3 seconds. This limitation is discussed in the system performance evaluation (Chapter~\ref{chap:evaluation}) and in the limitations analysis (Chapter~\ref{chap:discussion}).
 
 %------------------------------------------------------------------------------
 \section{Reproducibility}
 \label{sec:impl-reproducibility}
 %------------------------------------------------------------------------------
 
-To support reproducibility of the experimental results, the following artifacts are provided in Annex~C:
+To support reproducibility of the planned experimental evaluation, the following artifacts are provided in Annex~C:
 
 \begin{itemize}
   \item \textbf{Environment specification:} Complete \texttt{requirements.txt} with pinned dependency versions.
@@ -220,4 +223,4 @@ The benchmark dataset (50 Q\&A pairs) is provided in Annex~A with annotation gui
 \label{sec:impl-summary}
 %------------------------------------------------------------------------------
 
-This chapter has documented the implementation of AntiGravity across its four architectural layers. The technology stack is grounded in Python, Streamlit, FAISS, sentence-transformers, and the MCP Python SDK. Seven significant engineering challenges were encountered during development; six were fully resolved, and one (CPU inference latency) represents a known performance limitation bounded by the current infrastructure environment. The implementation is reproducible through the artifacts provided in the appendices. The following chapter presents the experimental evaluation of the implemented system.
+This chapter has documented the implementation of AntiGravity across its four architectural layers. The technology stack is grounded in Python, Streamlit, FAISS, sentence-transformers, and the MCP Python SDK. Seven significant engineering challenges were encountered during development; five were fully resolved, one (the absence of in-place deletion in FAISS flat indexes) is an accepted limitation, and one (CPU inference latency) was mitigated but remains the primary performance gap of the current infrastructure environment. The implementation is reproducible through the artifacts provided in the appendices. The following chapter presents the experimental evaluation of the implemented system.
