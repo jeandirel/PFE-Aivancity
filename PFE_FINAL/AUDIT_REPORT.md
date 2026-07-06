@@ -109,8 +109,19 @@ Les éléments suivants nécessitent des données réelles avant la soumission f
 3. **Chapitre 8** : compléter les réponses aux RQ avec les métriques réelles
 4. **Cover page** : compléter le nom du directeur de mémoire (`[Supervisor Name]`)
 5. **Remerciements** : compléter les placeholders personnels
-6. **Appendice C** : renseigner le SHA-256 du modèle GGUF téléchargé
-7. **Figures et captures** : ajouter les captures d'écran de l'interface Streamlit et les diagrammes d'architecture dans le dossier `figures/`
+6. **Appendice C** : renseigner le SHA-256 du modèle GGUF téléchargé (commande : `sha256sum mistral-7b-instruct-v0.2.Q4_K_M.gguf`)
+7. **Captures d'écran** : ajouter les captures de l'interface Streamlit (nécessite le système en fonctionnement)
+
+## 4bis. Finalisation du 6 juillet 2026
+
+Interventions complémentaires réalisées lors de la passe de finalisation :
+
+1. **Diagrammes d'architecture ajoutés** (point 7 partiellement résolu) : trois figures TikZ vectorielles dans le chapitre 4 — Fig. 4.1 architecture quatre couches (remplace le pseudo-schéma en boîtes texte), Fig. 4.2 pipeline de traitement de requête avec filtrage ACL, Fig. 4.3 topologie de déploiement Docker. La liste des figures n'est plus vide.
+2. **Corrections de compilation** : le document ne compilait pas (150+ erreurs). Corrigé : dollars mathématiques échappés `\$...\$` → `$...$` (ch03, ch06, ch08, introduits par les commits d'audit du 18 juin), caractères Unicode (≥, →, ×, ·) déclarés dans le préambule, langage `yaml` défini pour le package listings, package `minted` retiré (chargé mais jamais utilisé), hauteur d'en-tête corrigée.
+3. **En-têtes de page** : le titre du chapitre chevauchait « Jean Direl NZE — Aivancity PGE5 » sur toutes les pages ; en-tête simplifié (chapitre à gauche, « Aivancity PGE5 » à droite).
+4. **PDF recompilé** : `thesis.pdf` régénéré (99 pages, 0 erreur, 0 référence indéfinie, bibliographie et glossaire résolus). Note : `thesis.docx` n'a pas été régénéré et est obsolète.
+
+Aucune valeur expérimentale n'a été ajoutée : les [TBC] du chapitre 6 restent volontairement vides en attendant les mesures réelles (voir §2.1).
 
 ---
 

@@ -17,7 +17,7 @@ Three conditions are compared throughout:
 
 \begin{itemize}
 \item \textbf{Condition A --- LLM Alone:} Mistral 7B Instruct, temperature=0.1, no retrieval. The model answers from parametric knowledge only.
-\item \textbf{Condition B --- Naive RAG:} FAISS flat retrieval (top-\$k=5\$, no re-ranking, no MCP layer), same prompt template, same model.
+\item \textbf{Condition B --- Naive RAG:} FAISS flat retrieval (top-$k=5$, no re-ranking, no MCP layer), same prompt template, same model.
 \item \textbf{Condition C --- RAG+MCP (AntiGravity):} Full system --- MCP-mediated retrieval, ACL filtering, cross-encoder re-ranking, Mistral 7B generation.
 \end{itemize}
 
@@ -45,7 +45,7 @@ Unanswerable & Answer not in corpus & 5 & 10\% \\
 \end{tabularx}
 \end{table}
 
-Two independent annotators labelled the ground-truth relevant chunks for each question. Inter-annotator agreement was measured using Cohen's \$\kappa\$; pairs that fell below \$\kappa = 0.6\$ were adjudicated and revised before inclusion in the benchmark.
+Two independent annotators labelled the ground-truth relevant chunks for each question. Inter-annotator agreement was measured using Cohen's $\kappa$; pairs that fell below $\kappa = 0.6$ were adjudicated and revised before inclusion in the benchmark.
 
 % [NOTE FOR AUTHOR: Insert actual Cohen's kappa value here, e.g. kappa = [VALUE],
 %  and specify how many pairs were revised.]
@@ -71,8 +71,8 @@ BM25 (lexical baseline) & [TBC] & [TBC] & [TBC] & [TBC] & [TBC] \\
 Cond. B: Naive RAG (no rerank) & [TBC] & [TBC] & [TBC] & [TBC] & [TBC] \\
 Cond. C: RAG+MCP (with rerank) & \textbf{[TBC]} & \textbf{[TBC]} & \textbf{[TBC]} & \textbf{[TBC]} & \textbf{[TBC]} \\
 \midrule
-\$\Delta\$ C vs. B (absolute) & [TBC] & [TBC] & [TBC] & [TBC] & [TBC] \\
-\$p\$-value (Wilcoxon, \$\alpha=0.05\$) & [TBC] & [TBC] & [TBC] & [TBC] & [TBC] \\
+$\Delta$ C vs. B (absolute) & [TBC] & [TBC] & [TBC] & [TBC] & [TBC] \\
+$p$-value (Wilcoxon, $\alpha=0.05$) & [TBC] & [TBC] & [TBC] & [TBC] & [TBC] \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -94,11 +94,11 @@ Cond. C: RAG+MCP (with rerank) & \textbf{[TBC]} & \textbf{[TBC]} & \textbf{[TBC]
 \label{tab:retrieval-by-type}
 \begin{tabularx}{\textwidth}{@{}lXXX@{}}
 \toprule
-\textbf{Query Type} & \textbf{Cond. B} & \textbf{Cond. C} & \textbf{\$\Delta\$} \\
+\textbf{Query Type} & \textbf{Cond. B} & \textbf{Cond. C} & \textbf{$\Delta$} \\
 \midrule
-Factoid (\$n=20\$) & [TBC] & [TBC] & [TBC] \\
-Multi-hop (\$n=15\$) & [TBC] & [TBC] & [TBC] \\
-Procedural (\$n=10\$) & [TBC] & [TBC] & [TBC] \\
+Factoid ($n=20$) & [TBC] & [TBC] & [TBC] \\
+Multi-hop ($n=15$) & [TBC] & [TBC] & [TBC] \\
+Procedural ($n=10$) & [TBC] & [TBC] & [TBC] \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -152,7 +152,7 @@ Cond. C --- RAG+MCP & \textbf{[TBC]} & \textbf{[TBC]} & \textbf{[TBC]} & \textbf
 
 \subsection{Hallucination Rate Analysis}
 
-Hallucination rate is assessed through human annotation of a random sample of generated responses (\$n_{\text{sample}}\$ per condition), using the taxonomy of \citet{Ji2023}: intrinsic hallucinations (contradictions of retrieved context) and extrinsic hallucinations (claims absent from any retrieved chunk).
+Hallucination rate is assessed through human annotation of a random sample of generated responses ($n_{\text{sample}}$ per condition), using the taxonomy of \citet{Ji2023}: intrinsic hallucinations (contradictions of retrieved context) and extrinsic hallucinations (claims absent from any retrieved chunk).
 
 \begin{table}[H]
 \centering
@@ -210,9 +210,9 @@ System latency is measured as the elapsed time from query submission to complete
 \textbf{Component} & \textbf{P50 (ms)} & \textbf{P95 (ms)} & \textbf{NFR Budget} \\
 \midrule
 Query embedding (bi-encoder) & [TBC] & [TBC] & 100 ms \\
-FAISS retrieval (\$k=20\$) & [TBC] & [TBC] & 500 ms \\
+FAISS retrieval ($k=20$) & [TBC] & [TBC] & 500 ms \\
 ACL resolution (permission lookup) & [TBC] & [TBC] & 500 ms \\
-Cross-encoder re-ranking (\$k=20 \to 5\$) & [TBC] & [TBC] & 1000 ms \\
+Cross-encoder re-ranking ($k=20 \to 5$) & [TBC] & [TBC] & 1000 ms \\
 MCP protocol overhead & [TBC] & [TBC] & 200 ms \\
 LLM generation (Mistral 7B, CPU) & [TBC] & [TBC] & --- \\
 \textbf{Total end-to-end} & [TBC] & [TBC] & \textbf{5000 ms (NFR01)} \\
@@ -274,7 +274,7 @@ The System Usability Scale (SUS) is administered to all participants after a sin
 \midrule
 Mean SUS Score & [TBC] & [TBC] \\
 Adjective Rating & [TBC] & --- \\
-\$N\$ (participants) & [TBC] & --- \\
+$N$ (participants) & [TBC] & --- \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -293,7 +293,7 @@ TAM Perceived Usefulness (PU) and Perceived Ease of Use (PEOU) are measured usin
 \label{tab:tam-results}
 \begin{tabularx}{\textwidth}{@{}lXXX@{}}
 \toprule
-\textbf{Measure} & \textbf{AntiGravity} & \textbf{SharePoint Baseline} & \textbf{\$p\$-value} \\
+\textbf{Measure} & \textbf{AntiGravity} & \textbf{SharePoint Baseline} & \textbf{$p$-value} \\
 \midrule
 Perceived Usefulness (PU, /7) & [TBC] & [TBC] & [TBC] \\
 Perceived Ease of Use (PEOU, /7) & [TBC] & --- & --- \\
@@ -350,7 +350,7 @@ The ablation study decomposes the contribution of each architectural component b
 
 \begin{itemize}
 \item \textbf{A1 --- LLM Alone} (= Condition A): no retrieval.
-\item \textbf{A2 --- Dense retrieval, no re-ranking, no MCP}: bi-encoder + FAISS flat retrieval, direct function call (no MCP transport), top-\$k=5\$ injected into prompt.
+\item \textbf{A2 --- Dense retrieval, no re-ranking, no MCP}: bi-encoder + FAISS flat retrieval, direct function call (no MCP transport), top-$k=5$ injected into prompt.
 \item \textbf{A3 --- Dense retrieval + re-ranking, no MCP}: same as A2 with cross-encoder re-ranking.
 \item \textbf{A4 --- Full AntiGravity (= Condition C)}: A3 with MCP transport and ACL filtering.
 \end{itemize}
@@ -363,7 +363,7 @@ The progression A1 $\to$ A2 isolates the contribution of dense retrieval. A2 $\t
 \label{tab:ablation}
 \begin{tabularx}{\textwidth}{@{}lXXXX@{}}
 \toprule
-\textbf{Configuration} & \textbf{P@5} & \textbf{Faithfulness} & \textbf{\$\Delta$ P@5 vs. prev.} & \textbf{\$\Delta$ Faith. vs. prev.} \\
+\textbf{Configuration} & \textbf{P@5} & \textbf{Faithfulness} & \textbf{$\Delta$ P@5 vs. prev.} & \textbf{$\Delta$ Faith. vs. prev.} \\
 \midrule
 A1 --- LLM Alone & N/A & [TBC] & --- & --- \\
 A2 --- Dense only & [TBC] & [TBC] & [TBC] & [TBC] \\

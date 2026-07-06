@@ -82,34 +82,37 @@ The AntiGravity system comprises four architectural layers:
 
 \begin{figure}[H]
 \centering
-\fbox{\parbox{0.92\textwidth}{
-\begin{center}
-\textbf{LAYER 1 --- PRESENTATION}\\
-Streamlit Web Application (Python)\\
-Session management $\cdot$ Source citation display $\cdot$ Feedback collection
-\end{center}
-\vspace{0.2cm}\hrule\vspace{0.2cm}
-\begin{center}
-\textbf{LAYER 2 --- CONVERSATIONAL INTELLIGENCE}\\
-MCP Conversational Client\\
-Query classification $\cdot$ Context assembly $\cdot$ Re-ranking $\cdot$ Prompt engineering\\
-LLM Interface (Mistral 7B Instruct)
-\end{center}
-\vspace{0.2cm}\hrule\vspace{0.2cm}
-\begin{center}
-\textbf{LAYER 3 --- CONTEXT SERVER (MCP)}\\
-MCP Context Server\\
-ACL-filtered semantic search $\cdot$ FAISS index $\cdot$ Document store\\
-User session context $\cdot$ Permission enforcement
-\end{center}
-\vspace{0.2cm}\hrule\vspace{0.2cm}
-\begin{center}
-\textbf{LAYER 4 --- DATA SOURCES}\\
-SharePoint CERP (Microsoft Graph API $\cdot$ OAuth 2.0 $\cdot$ SSO)\\
-Document formats: PDF, DOCX
-\end{center}
-}}
-\caption{AntiGravity four-layer architecture overview}
+\begin{tikzpicture}[
+  layer/.style={draw, rounded corners=2pt, minimum width=0.88\textwidth,
+                minimum height=1.55cm, align=center, font=\small, fill=lightgray},
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  node distance=0.45cm
+]
+\node[layer] (l1) {\textbf{Layer 1 --- Presentation}\\
+  Streamlit Web Application (Python)\\
+  {\footnotesize Session management $\cdot$ Source citation display $\cdot$ Feedback collection}};
+\node[layer, below=of l1] (l2) {\textbf{Layer 2 --- Conversational Intelligence}\\
+  MCP Conversational Client $\cdot$ LLM Interface (Mistral 7B Instruct)\\
+  {\footnotesize Query classification $\cdot$ Context assembly $\cdot$ Re-ranking $\cdot$ Prompt engineering}};
+\node[layer, below=1.3cm of l2, fill=aivancityblue!12] (l3) {\textbf{Layer 3 --- Context Server (MCP)}\\
+  MCP Context Server\\
+  {\footnotesize ACL-filtered semantic search $\cdot$ FAISS index $\cdot$ Document store $\cdot$ Permission enforcement}};
+\node[layer, below=of l3] (l4) {\textbf{Layer 4 --- Data Sources}\\
+  SharePoint CERP (Microsoft Graph API $\cdot$ OAuth 2.0 $\cdot$ SSO)\\
+  {\footnotesize Document formats: PDF, DOCX}};
+
+\draw[flow, <->] (l1) -- (l2);
+\draw[flow, <->] (l2) -- (l3);
+\draw[flow, <->] (l3) -- (l4);
+
+\draw[dashed, thick, aivancityblue]
+  ($(l2.south west)!0.5!(l3.north west)+(-0.25,0)$) --
+  ($(l2.south east)!0.5!(l3.north east)+(0.25,0)$);
+\node[anchor=south east, font=\scriptsize\itshape, text=aivancityblue]
+  at ($(l2.south east)!0.5!(l3.north east)+(0.25,0.07)$)
+  {MCP protocol boundary --- security enforcement point};
+\end{tikzpicture}
+\caption{AntiGravity four-layer architecture overview. The dashed line marks the MCP protocol boundary between the conversational layer and the context server, which is the structural security enforcement point.}
 \label{fig:architecture-overview}
 \end{figure}
 
@@ -224,6 +227,38 @@ The ACL enforcement mechanism operates in six steps:
   \item Each candidate chunk is matched against the permission manifest. Chunks whose parent document has no permission intersection with the user's effective permission set are removed.
   \item Filtered candidates proceed to re-ranking.
 \end{enumerate}
+
+Figure~\ref{fig:query-flow} illustrates the complete query processing flow, from user query to cited response, highlighting where ACL filtering occurs relative to retrieval and re-ranking.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  qbox/.style={draw, rounded corners=2pt, minimum width=5.6cm, minimum height=0.85cm,
+               align=center, font=\footnotesize, fill=lightgray},
+  qboxsec/.style={qbox, fill=aivancityblue!12},
+  note/.style={font=\scriptsize\itshape, align=left, anchor=west},
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  node distance=0.35cm
+]
+\node[qbox] (q) {\textbf{1. User query} (authenticated session, OAuth token)};
+\node[qbox, below=of q] (cls) {\textbf{2. Query classification}\\ answerability + complexity};
+\node[qbox, below=of cls] (emb) {\textbf{3. Query embedding}\\ \texttt{all-mpnet-base-v2} (768-d, L2-normalized)};
+\node[qbox, below=of emb] (faiss) {\textbf{4. FAISS over-retrieval}\\ \texttt{IndexFlatIP}, top-$K=20$ candidates};
+\node[qboxsec, below=of faiss] (acl) {\textbf{5. ACL filtering (MCP server)}\\ permission manifest $\cap$ effective permission set};
+\node[qbox, below=of acl] (rerank) {\textbf{6. Cross-encoder re-ranking}\\ \texttt{ms-marco-MiniLM-L-6-v2}, top-$k=5$};
+\node[qbox, below=of rerank] (prompt) {\textbf{7. Prompt assembly}\\ system prompt + context block + history + query};
+\node[qbox, below=of prompt] (llm) {\textbf{8. Generation}\\ Mistral 7B Instruct (temperature = 0.1)};
+\node[qbox, below=of llm] (resp) {\textbf{9. Response with source citations}};
+
+\foreach \a/\b in {q/cls, cls/emb, emb/faiss, faiss/acl, acl/rerank, rerank/prompt, prompt/llm, llm/resp}
+  \draw[flow] (\a) -- (\b);
+
+\node[note, right=0.4cm of cls] {out-of-scope $\to$ graceful refusal (FR08)};
+\node[note, right=0.4cm of acl, text=aivancityblue] {unauthorized chunks removed\\ before any LLM exposure (NFR03)};
+\end{tikzpicture}
+\caption{ACL-aware query processing pipeline. Permission filtering (step 5, highlighted) occurs inside the MCP Context Server, between vector retrieval and re-ranking, so unauthorized content never reaches the prompt.}
+\label{fig:query-flow}
+\end{figure}
 
 \paragraph{Security guarantee.} No unauthorized document content is ever injected into the LLM prompt or transmitted to the client. The MCP boundary enforces this structurally.
 
@@ -346,6 +381,38 @@ The system deploys as three containerized services:
   \item \textbf{MCP Context Server:} Always-on service exposing MCP over HTTP/SSE transport with the FAISS index resident in memory.
   \item \textbf{Streamlit Application:} User-facing web application embedding the MCP client and LLM inference client.
 \end{itemize}
+
+Figure~\ref{fig:deployment} shows the deployment topology and the direction of data flows between services.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  svc/.style={draw, rounded corners=2pt, minimum width=3.6cm, minimum height=1.5cm,
+              align=center, font=\footnotesize, fill=lightgray},
+  ext/.style={svc, fill=white, dashed},
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  lbl/.style={font=\scriptsize, midway, align=center}
+]
+\node[ext] (user) {\textbf{User}\\ browser (SSO/MFA)};
+\node[svc, right=2.4cm of user] (app) {\textbf{Streamlit App}\\ MCP client\\ LLM inference};
+\node[svc, right=2.4cm of app, fill=aivancityblue!12] (mcp) {\textbf{MCP Context Server}\\ FAISS index (in memory)\\ permission manifest};
+\node[svc, below=2.2cm of mcp] (ing) {\textbf{Ingestion Worker}\\ nightly crawl\\ index rebuild};
+\node[ext, below=2.2cm of user] (sp) {\textbf{SharePoint CERP}\\ Microsoft Graph API};
+
+\draw[flow, <->] (user) -- (app) node[lbl, above=1pt] {HTTPS};
+\draw[flow, <->] (app) -- (mcp) node[lbl, above=1pt] {MCP\\ (streamable-http)};
+\draw[flow] (sp) -- (ing) node[lbl, below=1pt] {OAuth 2.0\\ (application)};
+\draw[flow] (ing) -- (mcp) node[lbl, right=1pt] {index +\\ manifest};
+\draw[flow, <->] (mcp.south west) -- (sp.north east) node[lbl, sloped, above=1pt, pos=0.6] {group resolution\\ (delegated token)};
+
+\begin{scope}[on background layer]
+\node[draw, dashed, rounded corners=3pt, fit=(app)(mcp)(ing), inner sep=0.4cm,
+      label={[font=\scriptsize\itshape, anchor=south east]above left:{Docker Compose --- DNSI network perimeter}}] {};
+\end{scope}
+\end{tikzpicture}
+\caption{Deployment topology: three containerized services inside the DNSI network perimeter. Document content never leaves the perimeter (NFR09).}
+\label{fig:deployment}
+\end{figure}
 
 \paragraph{Corporate proxy.} The DNSI's TLS-terminating proxy required configuring all HTTP clients with the proxy certificate in their trust stores, a proxy bypass list for internal service communication, and on-premises Mistral AI deployment to eliminate external API dependencies.
 
