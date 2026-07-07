@@ -135,6 +135,16 @@ Relecture intégrale (abstract, ch. 1–8, annexes A–E, bibliographie) par qua
 
 PDF recompilé : 100 pages, 0 erreur, 0 référence indéfinie.
 
+## 4quater. Passe d'ancrage bibliographique du 7 juillet 2026
+
+Recherches internet systématiques (quatre agents, chaque source vérifiée en ligne avant citation — aucune référence ajoutée de mémoire) :
+
+1. **Vérification des 38 références d'origine** : 30 correctes ; 7 corrigées — Johnson et al. (FAISS) année 2019 → 2021 + DOI ; Reimers & Gurevych booktitle complet EMNLP-IJCNLP ; Ma et al. version publiée EMNLP 2023 (le titre mélangeait deux versions) ; Anthropic2024MCP titre inventé → « Introducing the Model Context Protocol » + URL officielle ; Microsoft2024 et MicrosoftGraph2024 titres inexistants → pages Microsoft Learn réelles avec URLs ; Brooke 1996 initiales d'éditeur (McClelland I. L.). AivancityGuide2025 : document interne, non vérifiable publiquement (attendu).
+2. **24 nouvelles références vérifiées** intégrées dans le texte : instruments et statistiques (Cohen 1960, Landis & Koch 1977, Wilcoxon 1945, McNemar 1947, Manning et al. 2008, Robertson & Zaragoza 2009, Efron & Tibshirani 1993, Bangor et al. 2009, Sauro 2011), standards et systèmes (RFC 6749, RFC 7636, spécification MCP rev. 2025-11-25, Dettmers & Zettlemoyer ICML 2023, llama.cpp, model card Mistral-7B-Instruct-v0.2 — fenêtre 32k confirmée, MTEB/Muennighoff et al. 2023, sbert.net, Greshake et al. AISec 2023), contexte et adoption (McKinsey Global Institute 2012 « nearly 20% of the workweek », Microsoft 365 Blog 2020 « 200M MAU SharePoint », adoption MCP par OpenAI mars 2025 et Microsoft Build 2025, Jeong & Lee IEEE Access 2025 et Chen et al. ACM SAC 2025 sur le RAG à contrôle d'accès).
+3. **Corrections induites** : attribution de l'échelle d'adjectifs SUS (Brooke → Bangor et al. 2009) ; seuil SUS 68 = moyenne empirique (Sauro), pas « good » ; « over 100 RAG variants » non vérifiable → reformulé ; faiblesse non-anglais de MiniLM non sourcée → qualité benchmark (MTEB) ; revendication de nouveauté nuancée (« to the best of our knowledge ») face aux travaux 2025 sur le RAG à contrôle d'accès, désormais cités dans l'état de l'art et le research gap.
+
+Bibliographie : 38 → 62 entrées. PDF recompilé : 102 pages, 0 erreur.
+
 ---
 
 ## 5. Audit qualité du style
