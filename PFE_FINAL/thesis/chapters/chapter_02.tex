@@ -4,7 +4,7 @@
 \chapter{Background and State of the Art}
 \label{chap:background}
 
-This chapter establishes the theoretical and empirical foundations required to understand, position, and evaluate the contributions of this PFE report. We survey the relevant literature across six interconnected domains: Large Language Models and their limitations (Section~\ref{sec:bg-llm}); Retrieval-Augmented Generation architectures (Section~\ref{sec:bg-rag}); vector search and semantic indexing (Section~\ref{sec:bg-vector}); enterprise knowledge management and SharePoint (Section~\ref{sec:bg-enterprise}); the Model Context Protocol (Section~\ref{sec:bg-mcp}); security in enterprise AI systems (Section~\ref{sec:bg-security}); and RAG evaluation frameworks (Section~\ref{sec:bg-evaluation}). Each section concludes with a critical assessment of the current state of the art and the limitations this PFE report addresses. Section~\ref{sec:bg-gap} synthesizes the literature into an explicit research gap statement.
+This chapter establishes the theoretical and empirical foundations required to understand, position, and evaluate the contributions of this mémoire. We survey the relevant literature across six interconnected domains: Large Language Models and their limitations (Section~\ref{sec:bg-llm}); Retrieval-Augmented Generation architectures (Section~\ref{sec:bg-rag}); vector search and semantic indexing (Section~\ref{sec:bg-vector}); enterprise knowledge management and SharePoint (Section~\ref{sec:bg-enterprise}); the Model Context Protocol (Section~\ref{sec:bg-mcp}); security in enterprise AI systems (Section~\ref{sec:bg-security}); and RAG evaluation frameworks (Section~\ref{sec:bg-evaluation}). Each section concludes with a critical assessment of the current state of the art and the limitations this mémoire addresses. Section~\ref{sec:bg-gap} synthesizes the literature into an explicit research gap statement.
 
 %------------------------------------------------------------------------------
 \section{Large Language Models: Capabilities and Limitations}
@@ -147,22 +147,22 @@ Cross-encoder architectures \citep{Nogueira2019}, which process the (query, docu
 
 \subsection{Enterprise Knowledge Management}
 
-Knowledge Management (KM) as a discipline addresses the creation, capture, storage, sharing, and application of organizational knowledge \citep{Alavi2001}. The field distinguishes between explicit knowledge (codified in documents, procedures, and systems) and tacit knowledge (embedded in individual expertise and practice). Enterprise AI systems such as the one developed in this PFE report target explicit knowledge — the documented corpus accessible on platforms like SharePoint.
+Knowledge Management (KM) as a discipline addresses the creation, capture, storage, sharing, and application of organizational knowledge \citep{Alavi2001}. The field distinguishes between explicit knowledge (codified in documents, procedures, and systems) and tacit knowledge (embedded in individual expertise and practice). Enterprise AI systems such as the one developed in this mémoire target explicit knowledge — the documented corpus accessible on platforms like SharePoint.
 
-The organizational context matters for system design. Enterprises operate under regulatory constraints (data protection, information security, sector-specific compliance), organizational hierarchies (which map to document access permissions), and professional vocabulary (domain-specific terminology that generic embedding models may not represent well). A system designed for Wikipedia-scale open-domain question answering will not necessarily perform well on an enterprise corpus — a point that motivates the domain-specific evaluation protocol in this PFE report.
+The organizational context matters for system design. Enterprises operate under regulatory constraints (data protection, information security, sector-specific compliance), organizational hierarchies (which map to document access permissions), and professional vocabulary (domain-specific terminology that generic embedding models may not represent well). A system designed for Wikipedia-scale open-domain question answering will not necessarily perform well on an enterprise corpus — a point that motivates the domain-specific evaluation protocol in this mémoire.
 
 \subsection{SharePoint Architecture and Security Model}
 
 Microsoft SharePoint Online is built on a hierarchical content structure: Tenant → Site Collection → Site → Library → Folder → Document. Each level of this hierarchy can carry permission settings, which are either inherited (the default) or explicitly overridden. The SharePoint permission model comprises permission levels (Full Control, Design, Edit, Contribute, Read, View Only) assigned to security principals (users, Microsoft Entra ID groups, SharePoint groups) \citep{Microsoft2024}.
 
-At the API level, SharePoint exposes two integration surfaces relevant to this PFE report:
+At the API level, SharePoint exposes two integration surfaces relevant to this mémoire:
 
 \begin{itemize}
   \item \textbf{Microsoft Graph API} \citep{MicrosoftGraph2024}: a REST API providing unified access to Microsoft 365 services, including SharePoint document libraries. Authentication uses OAuth 2.0 with delegated or application permissions.
   \item \textbf{SharePoint REST API}: the legacy SharePoint-specific API, still widely used for site-level operations.
 \end{itemize}
 
-The key security challenge for RAG-over-SharePoint is \textit{permission-aware retrieval}: the semantic search that identifies relevant document chunks must respect the access rights of the querying user. A naive implementation — building a FAISS index over all documents, regardless of permissions, and then checking permissions at display time — would expose the existence of unauthorized documents to the user (through responses that implicitly reference them) and potentially leak information if the authorization check fails or is bypassed. A secure implementation must enforce permissions at the \textit{retrieval} layer, not the display layer. Designing this enforcement mechanism is a primary technical contribution of this PFE report.
+The key security challenge for RAG-over-SharePoint is \textit{permission-aware retrieval}: the semantic search that identifies relevant document chunks must respect the access rights of the querying user. A naive implementation — building a FAISS index over all documents, regardless of permissions, and then checking permissions at display time — would expose the existence of unauthorized documents to the user (through responses that implicitly reference them) and potentially leak information if the authorization check fails or is bypassed. A secure implementation must enforce permissions at the \textit{retrieval} layer, not the display layer. Designing this enforcement mechanism is a primary technical contribution of this mémoire.
 
 %------------------------------------------------------------------------------
 \section{The Model Context Protocol}
@@ -215,7 +215,7 @@ Enterprise adoption & High & Medium & Growing (Microsoft, Anthropic) \\
 \end{tabularx}
 \end{table}
 
-The comparison reveals MCP's primary advantage: structural security enforcement and cross-framework connector reuse. Its primary disadvantage — lower maturity and higher protocol overhead compared to direct API integration — is the key empirical question this PFE report addresses.
+The comparison reveals MCP's primary advantage: structural security enforcement and cross-framework connector reuse. Its primary disadvantage — lower maturity and higher protocol overhead compared to direct API integration — is the key empirical question this mémoire addresses.
 
 \subsection{MCP in Enterprise Deployments: Open Questions}
 
@@ -289,7 +289,7 @@ Classical information retrieval metrics provide complementary evaluation of the 
 
 \subsection{User Evaluation: SUS and TAM}
 
-Technical retrieval and generation metrics are necessary but insufficient for evaluating an enterprise system. The system must also be usable and accepted by its target users. Two validated instruments are employed in this PFE report:
+Technical retrieval and generation metrics are necessary but insufficient for evaluating an enterprise system. The system must also be usable and accepted by its target users. Two validated instruments are employed in this mémoire:
 
 The \textbf{System Usability Scale} (SUS) \citep{Brooke1996SUS} is a 10-item Likert questionnaire that produces a composite usability score from 0 to 100. SUS scores above 68 are considered above average, above 80 are considered excellent. SUS is technology-agnostic, widely validated, and appropriate for comparative usability assessment.
 
@@ -304,7 +304,7 @@ The preceding review of the literature identifies a specific and well-defined re
 
 \begin{table}[H]
 \centering
-\caption{Research gap: what existing work covers vs what this PFE report contributes}
+\caption{Research gap: what existing work covers vs what this mémoire contributes}
 \label{tab:research-gap}
 \begin{tabularx}{\textwidth}{@{}lXX@{}}
 \toprule
@@ -321,7 +321,7 @@ DSR methodology & Rarely applied to RAG systems & Full DSR cycle applied \\
 \end{tabularx}
 \end{table}
 
-The specific combination of (1) MCP as the integration protocol, (2) ACL-aware retrieval enforcement, (3) private enterprise corpus, and (4) comprehensive four-dimensional evaluation has not appeared in any prior published work as of the writing of this PFE report. This combination constitutes the primary scientific novelty of the report and the direct motivation for the research questions formulated in Chapter~\ref{chap:introduction}.
+The specific combination of (1) MCP as the integration protocol, (2) ACL-aware retrieval enforcement, (3) private enterprise corpus, and (4) comprehensive four-dimensional evaluation has not appeared in any prior published work as of the writing of this mémoire. This combination constitutes the primary scientific novelty of the mémoire and the direct motivation for the research questions formulated in Chapter~\ref{chap:introduction}.
 
 \bigskip
 
