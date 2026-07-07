@@ -178,7 +178,7 @@ Each chunk stores: document ID, SharePoint item ID, chunk index, character offse
 
 \begin{table}[H]
 \centering
-\caption{Embedding model trade-off analysis}
+\caption{Embedding model trade-off analysis. MTEB average scores from the Massive Text Embedding Benchmark \citep{Muennighoff2023}.}
 \label{tab:embedding-models}
 \begin{tabularx}{\textwidth}{@{}lXllll@{}}
 \toprule
@@ -191,7 +191,7 @@ Each chunk stores: document ID, SharePoint item ID, chunk index, character offse
 \end{tabularx}
 \end{table}
 
-\paragraph{Selected: \texttt{all-mpnet-base-v2}.} The OpenAI \texttt{ada-002} model offers superior benchmark performance but was rejected on two grounds: (1) NFR09 prohibits transmitting document content to external APIs; (2) $\sim$100ms per-query latency would exceed the NFR01 budget under realistic load. \texttt{all-MiniLM-L6-v2} was rejected due to its lower dimensionality and its weaker reported performance on non-English text, a concern for the French-language technical content of the DNSI corpus.
+\paragraph{Selected: \texttt{all-mpnet-base-v2}.} The OpenAI \texttt{ada-002} model offers superior benchmark performance but was rejected on two grounds: (1) NFR09 prohibits transmitting document content to external APIs; (2) $\sim$100ms per-query latency would exceed the NFR01 budget under realistic load. \texttt{all-MiniLM-L6-v2} was rejected due to its lower dimensionality and its generally lower benchmark quality \citep{Muennighoff2023}, a concern for the French-language technical content of the DNSI corpus.
 
 \subsection{FAISS Index Construction}
 
@@ -206,7 +206,7 @@ The index is built offline during ingestion and loaded into memory at server sta
 
 \subsection{MCP Server Design}
 
-The MCP Context Server implements the MCP server specification \citep{Anthropic2024MCP} in Python, exposing three MCP capabilities:
+The MCP Context Server implements the MCP server specification \citep{Anthropic2024MCP, MCPSpec2025} in Python, exposing three MCP capabilities:
 
 \begin{itemize}
   \item \textbf{Resources:} The corpus as addressable document chunks (accessible by chunk ID).
@@ -271,7 +271,7 @@ The available context budget for document chunks is computed as:
   C_{\text{docs}} = C_{\text{ctx}} - C_{\text{system}} - C_{\text{query}} - C_{\text{output}} - C_{\text{margin}}
   \label{eq:context-budget}
 \end{equation}
-where $C_{\text{ctx}} = 4096$ tokens (the context window configured at deployment for CPU memory and latency reasons; the Mistral 7B Instruct v0.2 model itself supports up to 32k tokens), $C_{\text{system}} \approx 150$ tokens, $C_{\text{query}} \leq 512$ tokens, $C_{\text{output}} = 512$ tokens reserved for generation, and $C_{\text{margin}} = 128$ tokens. Typical available budget: $\approx 2800$ tokens (5 chunks at 512 tokens each, consistent with $k = 5$).
+where $C_{\text{ctx}} = 4096$ tokens (the context window configured at deployment for CPU memory and latency reasons; the Mistral 7B Instruct v0.2 model itself supports up to 32k tokens \citep{MistralAI2023V02}), $C_{\text{system}} \approx 150$ tokens, $C_{\text{query}} \leq 512$ tokens, $C_{\text{output}} = 512$ tokens reserved for generation, and $C_{\text{margin}} = 128$ tokens. Typical available budget: $\approx 2800$ tokens (5 chunks at 512 tokens each, consistent with $k = 5$).
 
 %------------------------------------------------------------------------------
 \section{Query Processing and Re-ranking}
@@ -289,7 +289,7 @@ Incoming queries are classified along two dimensions:
 \subsection{Re-ranking}
 \label{subsec:reranking}
 
-\paragraph{Selected: \texttt{cross-encoder/ms-marco-MiniLM-L-6-v2}.} This cross-encoder re-scorer is applied to the top-$K$ ACL-filtered candidates, reordering them by joint (query, passage) relevance score. At 512-token chunks and batch size 20, re-ranking latency is approximately 200--400ms on CPU, within the NFR01 budget. The precision improvement from re-ranking is empirically validated in Chapter~\ref{chap:evaluation}.
+\paragraph{Selected: \texttt{cross-encoder/ms-marco-MiniLM-L-6-v2}.} This cross-encoder re-scorer, trained on the MS MARCO passage ranking task \citep{SBERTCrossEncoder2024, Nogueira2019}, is applied to the top-$K$ ACL-filtered candidates, reordering them by joint (query, passage) relevance score. At 512-token chunks and batch size 20, re-ranking latency is approximately 200--400ms on CPU, within the NFR01 budget. The precision improvement from re-ranking is empirically validated in Chapter~\ref{chap:evaluation}.
 
 %------------------------------------------------------------------------------
 \section{Generation Pipeline}
@@ -340,7 +340,7 @@ Generation parameters: temperature=0.1, top\_p=0.9, max\_new\_tokens=512, repeti
 
 \subsection{Authentication Flow}
 
-OAuth 2.0 Authorization Code flow with PKCE, against Microsoft Entra ID:
+OAuth 2.0 Authorization Code flow \citep{RFC6749} with PKCE \citep{RFC7636}, against Microsoft Entra ID:
 \begin{enumerate}
   \item User is redirected to Entra ID login (supporting MFA per organization policy).
   \item Entra ID returns an authorization code; the application exchanges it for a delegated access token (\texttt{Sites.Read.All}, \texttt{Files.Read.All}).

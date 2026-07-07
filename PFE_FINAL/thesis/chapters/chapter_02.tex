@@ -162,7 +162,7 @@ At the API level, SharePoint exposes two integration surfaces relevant to this m
   \item \textbf{SharePoint REST API}: the legacy SharePoint-specific API, still widely used for site-level operations.
 \end{itemize}
 
-The key security challenge for RAG-over-SharePoint is \textit{permission-aware retrieval}: the semantic search that identifies relevant document chunks must respect the access rights of the querying user. A naive implementation — building a FAISS index over all documents, regardless of permissions, and then checking permissions at display time — would expose the existence of unauthorized documents to the user (through responses that implicitly reference them) and potentially leak information if the authorization check fails or is bypassed. A secure implementation must enforce permissions at the \textit{retrieval} layer, not the display layer. Designing this enforcement mechanism is a primary technical contribution of this mémoire.
+The key security challenge for RAG-over-SharePoint is \textit{permission-aware retrieval}: the semantic search that identifies relevant document chunks must respect the access rights of the querying user --- a requirement that recent work on permission-aware and access-controlled RAG has only begun to address \citep{Jeong2025, Chen2025SAC}. A naive implementation — building a FAISS index over all documents, regardless of permissions, and then checking permissions at display time — would expose the existence of unauthorized documents to the user (through responses that implicitly reference them) and potentially leak information if the authorization check fails or is bypassed. A secure implementation must enforce permissions at the \textit{retrieval} layer, not the display layer. Designing this enforcement mechanism is a primary technical contribution of this mémoire.
 
 %------------------------------------------------------------------------------
 \section{The Model Context Protocol}
@@ -171,9 +171,9 @@ The key security challenge for RAG-over-SharePoint is \textit{permission-aware r
 
 \subsection{Protocol Overview}
 
-The Model Context Protocol (MCP) \citep{Anthropic2024MCP} was publicly released by Anthropic in November 2024 as an open standard for connecting AI systems to external data and tool providers. As of mid-2026, MCP has been adopted by major AI platforms including Claude (Anthropic), Copilot (Microsoft), and numerous enterprise AI frameworks, positioning it as a de facto standard for AI-data integration.
+The Model Context Protocol (MCP) \citep{Anthropic2024MCP} was publicly released by Anthropic in November 2024 as an open standard for connecting AI systems to external data and tool providers. As of mid-2026, MCP has been adopted by major AI platforms beyond Anthropic --- including OpenAI, which added MCP support across its Agents SDK and ChatGPT products in March 2025 \citep{TechCrunch2025MCP}, and Microsoft, which announced native MCP support in Windows at Build 2025 \citep{WindowsCentral2025MCP} --- positioning it as a de facto standard for AI-data integration.
 
-MCP defines a client-server architecture with three roles:
+MCP defines a client-server architecture with three roles \citep{MCPSpec2025}:
 
 \begin{itemize}
   \item \textbf{MCP Host:} The AI application or agent (in our case, the AntiGravity conversational application) that coordinates one or more client connections and consumes the exposed capabilities.
@@ -312,7 +312,7 @@ The preceding review of the literature identifies a specific and well-defined re
 \midrule
 Knowledge base & Wikipedia, open web, academic QA & Private enterprise SharePoint corpus \\
 Integration protocol & Ad-hoc connectors / LangChain & Model Context Protocol (standardized) \\
-Access control & Generally absent or post-hoc & ACL-enforced at retrieval layer (structural) \\
+Access control & Emerging (IAM-based filtering); absent from mainstream frameworks & ACL-enforced at retrieval layer (structural) \\
 Comparative evaluation & LLM vs RAG (general) & LLM vs RAG vs RAG+MCP (enterprise) \\
 Evaluation scope & Retrieval or generation & Retrieval + generation + system + user \\
 Industrial context & Academic benchmarks & Real DNSI production constraints \\
@@ -321,7 +321,7 @@ DSR methodology & Rarely applied to RAG systems & Full DSR cycle applied \\
 \end{tabularx}
 \end{table}
 
-The specific combination of (1) MCP as the integration protocol, (2) ACL-aware retrieval enforcement, (3) private enterprise corpus, and (4) comprehensive four-dimensional evaluation has not appeared in any prior published work as of the writing of this mémoire. This combination constitutes the primary scientific novelty of the mémoire and the direct motivation for the research questions formulated in Chapter~\ref{chap:introduction}.
+While permission-aware retrieval for RAG has recently emerged as a research topic \citep{Jeong2025, Chen2025SAC}, the specific combination of (1) MCP as the integration protocol, (2) ACL-aware retrieval enforcement on SharePoint, (3) a private enterprise corpus, and (4) comprehensive four-dimensional evaluation has, to the best of our knowledge, not appeared in any prior published work as of the writing of this mémoire. This combination constitutes the primary scientific novelty of the mémoire and the direct motivation for the research questions formulated in Chapter~\ref{chap:introduction}.
 
 \bigskip
 

@@ -45,7 +45,7 @@ Unanswerable & Answer not in corpus & 5 & 10\% \\
 \end{tabularx}
 \end{table}
 
-Two independent annotators label the ground-truth relevant chunks for each question. Overall inter-annotator agreement is measured using Cohen's $\kappa$ [TBC]; pairs on which the annotators disagree are adjudicated and revised before inclusion in the benchmark.
+Two independent annotators label the ground-truth relevant chunks for each question. Overall inter-annotator agreement is measured using Cohen's $\kappa$ \citep{Cohen1960Kappa} [TBC]; pairs on which the annotators disagree are adjudicated and revised before inclusion in the benchmark.
 
 % [NOTE FOR AUTHOR: Insert actual Cohen's kappa value here, e.g. kappa = [VALUE],
 %  and specify how many pairs were revised.]
@@ -57,7 +57,7 @@ Two independent annotators label the ground-truth relevant chunks for each quest
 
 \subsection{Results}
 
-Retrieval is evaluated on Conditions B and C (Condition A has no retrieval component). Results are reported over the answerable questions in the benchmark. A BM25 lexical baseline provides a reference point for assessing the contribution of dense semantic search.
+Retrieval is evaluated on Conditions B and C (Condition A has no retrieval component). Results are reported over the answerable questions in the benchmark. A BM25 lexical baseline \citep{Robertson2009BM25} provides a reference point for assessing the contribution of dense semantic search.
 
 \begin{table}[H]
 \centering
@@ -124,7 +124,7 @@ The expected pattern is that re-ranking produces its largest gains on multi-hop 
 
 \subsection{RAGAS Metrics}
 
-Table~\ref{tab:ragas-results} reports RAGAS generation quality across all three conditions on the answerable questions.
+Table~\ref{tab:ragas-results} reports RAGAS \citep{Es2023RAGAS} generation quality across all three conditions on the answerable questions.
 
 \begin{table}[H]
 \centering
@@ -263,7 +263,7 @@ LLM generation (Mistral 7B, CPU) & [TBC] & [TBC] & --- \\
 
 \subsection{SUS Results}
 
-The System Usability Scale (SUS) is administered to all participants after a single-session evaluation using the five task scenarios of Appendix~\ref{app:user-study}. SUS scores are computed using the standard Brooke (1996) formula and interpreted against the adjective rating scale of \citet{Brooke1996SUS}.
+The System Usability Scale (SUS) is administered to all participants after a single-session evaluation using the five task scenarios of Appendix~\ref{app:user-study}. SUS scores are computed using the standard formula of \citet{Brooke1996SUS} and interpreted against the adjective rating scale of \citet{Bangor2009SUSAdjective}.
 
 \begin{table}[H]
 \centering
@@ -286,7 +286,7 @@ $N$ (participants) & [TBC] & --- \\
 
 \subsection{TAM Results}
 
-TAM Perceived Usefulness (PU) and Perceived Ease of Use (PEOU) are measured using the instruments in Appendix~\ref{app:user-study}. SharePoint search satisfaction is collected as a baseline using the same 7-point Likert scale applied to the PU items.
+TAM \citep{Davis1989TAM} Perceived Usefulness (PU) and Perceived Ease of Use (PEOU) are measured using the instruments in Appendix~\ref{app:user-study}. SharePoint search satisfaction is collected as a baseline using the same 7-point Likert scale applied to the PU items.
 
 \begin{table}[H]
 \centering
@@ -305,7 +305,7 @@ Perceived Ease of Use (PEOU, /7) & [TBC] & --- & --- \\
 % [NOTE FOR AUTHOR: Use a one-sample or paired Wilcoxon test to compare AntiGravity PU
 %  to SharePoint baseline PU. Report effect size (Cohen's d or r) alongside p-value.]
 
-\paragraph{Hypothesis H5 (user acceptance SUS $\geq$ 68 and TAM PU significantly higher than SharePoint baseline):} A SUS score above 68 corresponds to the "good" classification and represents the minimum acceptable adoption threshold. The TAM comparison tests whether users perceive AntiGravity as more useful than the current SharePoint search workflow.
+\paragraph{Hypothesis H5 (user acceptance SUS $\geq$ 68 and TAM PU significantly higher than SharePoint baseline):} A SUS score of 68 corresponds to the empirical average (50th percentile) across published SUS studies \citep{Sauro2011SUS}, and scores approaching 71 map to the ``Good'' adjective rating of \citet{Bangor2009SUSAdjective}; SUS $\geq$ 68 therefore represents the minimum acceptable adoption threshold. The TAM comparison tests whether users perceive AntiGravity as more useful than the current SharePoint search workflow.
 
 \subsection{Task-Based Evaluation}
 

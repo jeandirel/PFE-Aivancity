@@ -47,7 +47,7 @@ The prototype was developed and deployed on the following infrastructure:
   \item \textbf{LLM inference:} \texttt{llama-cpp-python} with GGUF quantization (4-bit quantized Mistral 7B), enabling inference on CPU at approximately 3--8 tokens/second
 \end{itemize}
 
-The choice of CPU-only deployment was driven by the DNSI's current infrastructure constraints. The 4-bit quantization of Mistral 7B (\texttt{mistral-7b-instruct-v0.2.Q4\_K\_M.gguf}) reduces memory requirements from $\sim$14 GB (FP16) to $\sim$4.5 GB, with a perplexity degradation reported to be under 3\% relative to the full-precision model for this quantization level.
+The choice of CPU-only deployment was driven by the DNSI's current infrastructure constraints. The 4-bit quantization of Mistral 7B (\texttt{mistral-7b-instruct-v0.2.Q4\_K\_M.gguf}) reduces memory requirements from $\sim$14 GB (FP16) to $\sim$4.5 GB, with a perplexity degradation reported to be under 3\% relative to the full-precision model for this quantization level \citep{GerganovLlamaCpp2023}; 4-bit precision has moreover been shown to be near-universally optimal in the accuracy--model-bits trade-off \citep{Dettmers2023}.
 
 %------------------------------------------------------------------------------
 \section{MCP-Compatible SharePoint Connector}
@@ -154,7 +154,7 @@ async def search_documents(name: str, arguments: dict) -> list[TextContent]:
     return format_context_block(reranked, authorized_chunks)
 \end{lstlisting}
 
-\paragraph{Engineering challenge: MCP transport configuration behind corporate proxy.} The HTTP/SSE transport initially used by the MCP server was broken by the corporate proxy, which buffers and inspects long-lived streaming responses and thereby delays or drops Server-Sent Events. The resolution was to configure the MCP server to use the \texttt{streamable-http} transport variant, which tolerates proxy buffering, rather than the default SSE transport.
+\paragraph{Engineering challenge: MCP transport configuration behind corporate proxy.} The HTTP/SSE transport initially used by the MCP server was broken by the corporate proxy, which buffers and inspects long-lived streaming responses and thereby delays or drops Server-Sent Events. The resolution was to configure the MCP server to use the \texttt{streamable-http} transport variant \citep{MCPSpec2025}, which tolerates proxy buffering, rather than the default SSE transport.
 
 %------------------------------------------------------------------------------
 \section{Streamlit Application}

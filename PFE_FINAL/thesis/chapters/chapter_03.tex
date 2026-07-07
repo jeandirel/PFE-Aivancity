@@ -112,14 +112,14 @@ A domain-specific benchmark dataset is constructed from the DNSI SharePoint corp
   \item \textbf{Document sampling:} A stratified sample of documents is drawn from the SharePoint corpus, covering the major document categories present (technical documentation, procedural guides, security policies, project reports).
   \item \textbf{Question generation:} For each sampled document, four types of questions are generated: (i) factoid questions with a single-document answer; (ii) multi-hop questions requiring synthesis across two documents; (iii) procedural questions requiring step-ordered instructions; (iv) unanswerable questions whose answer is not in the corpus (testing the graceful-refusal requirement FR08).
   \item \textbf{Ground-truth annotation:} Each question is annotated with (a) the correct answer, (b) the set of relevant document chunks (passage-level ground truth), and (c) an answerability label.
-  \item \textbf{Quality control:} Two independent annotators evaluate each question-answer pair. Overall inter-annotator agreement is measured with Cohen's $\kappa$; individual pairs on which the annotators disagree are reviewed and revised, and an overall $\kappa < 0.6$ triggers a full re-annotation pass.
+  \item \textbf{Quality control:} Two independent annotators evaluate each question-answer pair. Overall inter-annotator agreement is measured with Cohen's $\kappa$ \citep{Cohen1960Kappa}; individual pairs on which the annotators disagree are reviewed and revised, and an overall $\kappa < 0.6$ --- below the ``substantial agreement'' band of \citet{LandisKoch1977} --- triggers a full re-annotation pass.
 \end{enumerate}
 
-The target benchmark size is $N = 50$ question-answer pairs (20 factoid, 15 multi-hop, 10 procedural, 5 unanswerable), which permits reporting metric distributions with bootstrapped 95\% confidence intervals while acknowledging the limited statistical power inherent to this proof-of-concept evaluation (Section~\ref{sec:method-validity}).
+The target benchmark size is $N = 50$ question-answer pairs (20 factoid, 15 multi-hop, 10 procedural, 5 unanswerable), which permits reporting metric distributions with bootstrapped 95\% confidence intervals \citep{Efron1993Bootstrap} while acknowledging the limited statistical power inherent to this proof-of-concept evaluation (Section~\ref{sec:method-validity}).
 
 \subsection{Retrieval Evaluation Protocol}
 
-Retrieval quality is measured against the ground-truth relevant chunks for each benchmark question. The following metrics are computed for each retrieval-based experimental condition (B and C) and for a BM25 lexical baseline included to situate dense retrieval against classical keyword search (H3):
+Retrieval quality is measured against the ground-truth relevant chunks for each benchmark question. The following metrics, following standard information retrieval definitions \citep{Manning2008IIR}, are computed for each retrieval-based experimental condition (B and C) and for a BM25 lexical baseline \citep{Robertson2009BM25} included to situate dense retrieval against classical keyword search (H3):
 
 \begin{align}
 \text{Precision@K} &= \frac{|\text{Relevant} \cap \text{Retrieved}@K|}{K} \label{eq:precision}\\[6pt]
@@ -128,11 +128,11 @@ Retrieval quality is measured against the ground-truth relevant chunks for each 
 \text{nDCG@K} &= \frac{\text{DCG@K}}{\text{IDCG@K}}, \quad \text{where DCG@K} = \sum_{i=1}^{K} \frac{\text{rel}_i}{\log_2(i+1)} \label{eq:ndcg}
 \end{align}
 
-Metrics are reported for $K \in \{1, 3, 5, 10\}$. Statistical significance is assessed with a paired Wilcoxon signed-rank test ($\alpha = 0.05$) comparing Condition B (Naive RAG) to Condition C (RAG+MCP).
+Metrics are reported for $K \in \{1, 3, 5, 10\}$. Statistical significance is assessed with a paired Wilcoxon signed-rank test \citep{Wilcoxon1945} ($\alpha = 0.05$) comparing Condition B (Naive RAG) to Condition C (RAG+MCP).
 
 \subsection{Generation Evaluation Protocol}
 
-Generation quality is assessed across all three conditions using a combination of automated metrics (RAGAS) and human evaluation:
+Generation quality is assessed across all three conditions using a combination of automated metrics (RAGAS, \citealp{Es2023RAGAS}) and human evaluation:
 
 \paragraph{Automated metrics (RAGAS):}
 \begin{itemize}
@@ -148,7 +148,7 @@ Each generated response is manually evaluated by two independent annotators for 
   \label{eq:hallucination}
 \end{equation}
 
-All generation experiments are run with the system's production decoding configuration (temperature=0.1, fixed random seed) to ensure reproducibility. The difference in hallucination rate between paired conditions is assessed with McNemar's test on the per-query annotations. To assess variance introduced by prompt formulation, each query is run with two prompt variants and the metric range is reported alongside the mean.
+All generation experiments are run with the system's production decoding configuration (temperature=0.1, fixed random seed) to ensure reproducibility. The difference in hallucination rate between paired conditions is assessed with McNemar's test \citep{McNemar1947} on the per-query annotations. To assess variance introduced by prompt formulation, each query is run with two prompt variants and the metric range is reported alongside the mean.
 
 \subsection{System Performance Evaluation Protocol}
 
@@ -172,11 +172,11 @@ The user study is conducted with DNSI employees (target $N \geq 10$) following a
 \begin{enumerate}
   \item \textbf{Task-based evaluation:} Each participant completes five representative business tasks using (a) the current SharePoint search interface and (b) the AntiGravity assistant. Task order is counterbalanced. Performance is measured by task completion rate and time-on-task.
   \item \textbf{SUS questionnaire:} After each system, participants complete the 10-item SUS questionnaire.
-  \item \textbf{TAM questionnaire:} Participants complete a validated TAM instrument measuring perceived usefulness and perceived ease of use, administered for both systems so that AntiGravity can be compared to the incumbent SharePoint search interface.
+  \item \textbf{TAM questionnaire:} Participants complete a validated TAM instrument \citep{Davis1989TAM} measuring perceived usefulness and perceived ease of use, administered for both systems so that AntiGravity can be compared to the incumbent SharePoint search interface.
   \item \textbf{Semi-structured interview:} A 15-minute qualitative interview explores trust, limitations perceived, and adoption barriers.
 \end{enumerate}
 
-Given the constraint of a small sample ($N < 30$), SUS and TAM scores are reported with confidence intervals using bootstrapping. Qualitative interview data is analyzed thematically \citep{Braun2006}.
+Given the constraint of a small sample ($N < 30$), SUS and TAM scores are reported with confidence intervals using bootstrapping \citep{Efron1993Bootstrap}. Qualitative interview data is analyzed thematically \citep{Braun2006}.
 
 %------------------------------------------------------------------------------
 \subsection{Research Hypotheses}
@@ -189,7 +189,7 @@ The following six hypotheses operationalize the research questions. Each hypothe
 \item \textbf{H2:} The RAG+MCP architecture achieves a RAGAS Faithfulness score $\geq 0.85$ on the benchmark (NFR10).
 \item \textbf{H3:} Dense semantic retrieval (Condition B) achieves higher Precision@5 than BM25 lexical search on the DNSI corpus.
 \item \textbf{H4:} The MCP protocol overhead does not exceed 200~ms at P95 (design target derived from the NFR01 end-to-end latency budget).
-\item \textbf{H5:} User acceptance of AntiGravity meets the threshold of SUS $\geq 68$, and its TAM Perceived Usefulness is significantly higher than that of the incumbent SharePoint search interface (both instruments administered in the user study).
+\item \textbf{H5:} User acceptance of AntiGravity meets the threshold of SUS $\geq 68$, the empirical average SUS score \citep{Sauro2011SUS, Bangor2009SUSAdjective}, and its TAM Perceived Usefulness is significantly higher than that of the incumbent SharePoint search interface (both instruments administered in the user study).
 \item \textbf{H6:} Cross-encoder re-ranking improves MRR over bi-encoder-only retrieval by at least 15\% relative, assessed via the ablation study comparing otherwise identical configurations with and without re-ranking (Chapter~\ref{chap:evaluation}).
 \end{itemize}
 
