@@ -17,6 +17,24 @@ Cette arborescence contient la réécriture contrôlée du mémoire de Jean Dire
 - les perspectives ne doivent jamais être décrites au passé ;
 - les informations sensibles doivent être anonymisées.
 
+## Organisation des chapitres
+
+Les chapitres volumineux peuvent être divisés en sous-fichiers LaTeX afin de faciliter leur audit et leur maintenance. Le fichier principal du chapitre conserve les commandes `\input` nécessaires à la compilation.
+
 ## État d'avancement
 
-- Chapitre 1 : réécriture en cours sur la branche `revision-memoire-gpt`.
+- Chapitre 1 — Contexte organisationnel, besoin métier et problématique : **terminé**.
+- Chapitre 2 — État de l'art et fondements techniques de l'Assistant RAG DNSI : **terminé**.
+  - recherche lexicale, Transformer, embeddings et `multilingual-e5-large` ;
+  - RAG, réécriture de requête, reranking hybride et limites du grounding ;
+  - Qdrant, payloads, filtrage ACL, Mistral Small 3.1 24B et vLLM ;
+  - SharePoint, Microsoft Graph, Freshservice, RGPD, AI Act et évaluation RAG.
+
+## Éléments explicitement exclus sans nouvelle preuve
+
+- AntiGravity comme nom du produit ;
+- MCP comme composant de production ;
+- Mistral 7B sur CPU comme modèle actif ;
+- `all-mpnet-base-v2` comme modèle d'embeddings actif ;
+- FAISS comme base vectorielle principale ;
+- métriques, enquêtes ou tests statistiques sans résultats traçables.
