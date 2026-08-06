@@ -1,0 +1,97 @@
+\section{Base vectorielle, métadonnées et Qdrant}
+
+\subsection{De la bibliothèque FAISS à un service vectoriel persistant}
+
+FAISS est une bibliothèque de recherche de voisins proches conçue pour les vecteurs denses. Elle fournit plusieurs index exacts ou approximatifs et demeure une référence pour les expérimentations locales. Son usage n'implique cependant pas, à lui seul, la gestion d'une API distante, de la persistance opérationnelle, des métadonnées complexes ou du filtrage d'autorisation.
+
+Qdrant est une base vectorielle fonctionnant comme un service. Chaque point associe un vecteur à un \textit{payload} JSON. La documentation officielle décrit la combinaison d'un index vectoriel et d'index de payload afin de filtrer les résultats pendant la recherche \citep{QdrantIndexing2026,QdrantFiltering2026}. Cette capacité est particulièrement pertinente pour le projet, car un fragment doit être recherché selon sa proximité sémantique tout en respectant sa collection, sa source et ses principaux autorisés.
+
+Le dépôt conserve des modules FAISS pour la compatibilité, les tests et l'historique de migration. Le README et le fichier \texttt{docker-compose.prod.yml} identifient néanmoins Qdrant comme la base vectorielle active. Le mémoire ne doit donc pas comparer FAISS et Qdrant sur des performances non mesurées. La distinction retenue est architecturale : FAISS est une bibliothèque embarquée, tandis que Qdrant fournit dans ce projet un service persistant, interrogeable par API et associé à des payloads filtrables.
+
+\subsection{Recherche approximative et index HNSW}
+
+Lorsque le corpus augmente, comparer une requête à chaque vecteur devient coûteux. Les méthodes de recherche approximative de voisins proches réduisent le nombre de comparaisons. Qdrant utilise notamment HNSW, une structure de graphe hiérarchique dans laquelle la recherche progresse entre des vecteurs voisins. L'approximation introduit un compromis entre latence, mémoire et rappel.
+
+Le présent mémoire ne fixe pas de gain de performance pour l'Assistant RAG DNSI, car aucun benchmark comparatif validé n'est encore mobilisé à ce stade. Il retient seulement que l'index vectoriel permet de maintenir une recherche efficace et que ses paramètres devront être ajustés selon la taille réelle des collections et les objectifs de rappel.
+
+\subsection{Payloads et filtrage des autorisations}
+
+Les embeddings représentent le contenu sémantique, mais ils ne peuvent pas encoder de manière fiable toutes les contraintes métier. Les droits d'accès, le système source, l'identifiant du document ou l'URL doivent être stockés comme métadonnées explicites. Qdrant permet d'appliquer des conditions booléennes sur ces payloads lors de la recherche \citep{QdrantFiltering2026}.
+
+Le module \texttt{security\_acl.py} normalise plusieurs catégories de principaux : utilisateurs, groupes Microsoft Entra, groupes SharePoint, groupes Freshservice et marqueurs publics. Il construit ensuite un filtre Qdrant portant sur \texttt{acl\_read\_principals} et \texttt{acl\_public}. Le store vectoriel transmet ce filtre à la requête Qdrant avant de retourner les fragments.
+
+Ce placement du contrôle au niveau de la récupération est essentiel. Un filtrage réalisé seulement après la génération serait trop tardif, car le modèle aurait déjà reçu le contenu non autorisé. La littérature et les documentations de sécurité ne suffisent toutefois pas à prouver l'absence de fuite. Il faut tester les cas d'héritage, les permissions uniques, les groupes, les documents sans métadonnées et les erreurs de synchronisation.
+
+\section{Modèle génératif et inférence locale}
+
+\subsection{Mistral Small 3.1 24B}
+
+Le fichier de déploiement utilise \texttt{Mistral-Small-3.1-24B-Instruct-2503}. La fiche officielle décrit un modèle de 24 milliards de paramètres, multilingue et doté d'une fenêtre de contexte pouvant atteindre 128~000 tokens selon sa configuration \citep{MistralSmall31ModelCard}. Elle recommande notamment vLLM pour le service d'inférence.
+
+Ces caractéristiques générales expliquent la compatibilité du modèle avec un assistant francophone et des contextes documentaires relativement longs. Elles ne démontrent pas sa qualité sur les procédures internes de la DNSI. La pertinence dépend du prompt, de la qualité du contexte, des paramètres de génération et des questions posées. Le mémoire évite donc de reproduire des scores de benchmark publics comme s'ils constituaient les résultats du projet.
+
+Le modèle est chargé localement depuis un volume monté dans le conteneur. Le fichier de production le lance en précision \texttt{bfloat16} sur les GPU disponibles. Cette configuration exige une capacité mémoire importante et lie la disponibilité du service à l'infrastructure GPU. L'hébergement local réduit la transmission de documents vers une API publique, mais transfère à l'entreprise la responsabilité du déploiement, des mises à jour, de la sécurité des images et du dimensionnement.
+
+\subsection{vLLM et gestion de la mémoire d'inférence}
+
+vLLM est un moteur de service pour grands modèles de langage. \citet{Kwon2023vLLM} introduisent PagedAttention, une méthode inspirée de la mémoire virtuelle pour réduire la fragmentation du cache clé-valeur utilisé pendant la génération. Le but est d'améliorer l'utilisation de la mémoire GPU et de faciliter le traitement simultané de plusieurs requêtes.
+
+Dans le projet, vLLM expose le modèle sur un service HTTP compatible avec l'API OpenAI. Le backend peut ainsi envoyer des messages structurés sans dépendre d'un fournisseur externe. Le déploiement définit également un nombre maximal de séquences, une longueur de contexte, une utilisation cible de la mémoire GPU, une clé d'API et un contrôle de santé.
+
+Les améliorations publiées pour vLLM ont été mesurées dans les conditions expérimentales de ses auteurs. Elles ne permettent pas d'affirmer que l'Assistant RAG DNSI atteint un débit ou une latence précis. Ces mesures doivent être collectées sur la VM, avec le modèle, les paramètres et les charges réels.
+
+\section{Connecteurs et systèmes documentaires d'entreprise}
+
+\subsection{SharePoint et Microsoft Graph}
+
+SharePoint organise le contenu dans une hiérarchie de sites, bibliothèques, dossiers et éléments. Les autorisations sont généralement héritées du parent, mais l'héritage peut être interrompu à différents niveaux. Microsoft rappelle qu'un document ou un élément peut disposer d'autorisations uniques \citep{MicrosoftSharePointPermissions2026}. Une indexation documentaire doit donc conserver le contexte d'autorisation et pas seulement le texte extrait.
+
+Microsoft Graph distingue les autorisations déléguées, utilisées au nom d'un utilisateur connecté, et les autorisations applicatives, accordées à une application agissant sans utilisateur. La documentation recommande de demander les privilèges minimaux nécessaires \citep{MicrosoftGraphPermissions2026}. Ce principe est important pour un connecteur de synchronisation, car une permission applicative étendue peut donner accès à davantage de sites que le périmètre réellement requis.
+
+Le pipeline du projet télécharge les documents, enrichit un mapping avec les URL et les ACL, puis indexe les fragments dans une collection Qdrant dérivée du site. L'état de l'art ne permet pas de conclure que cette synchronisation est exhaustive. Les suppressions, les changements d'héritage, les groupes imbriqués et les échecs partiels constituent des cas qui doivent être gérés et audités.
+
+\subsection{Freshservice et contraintes d'API}
+
+Freshservice expose une API REST v2 sécurisée par HTTPS. La documentation officielle décrit une authentification par clé d'API, des permissions dépendant du rôle de l'agent, une pagination et des limites de requêtes appliquées au compte \citep{FreshserviceAPI2026}. Ces contraintes influencent directement un connecteur documentaire : une synchronisation doit limiter les appels, gérer les réponses \texttt{429}, respecter l'en-tête \texttt{Retry-After} et éviter de republier des données que l'identité utilisée ne devrait pas consulter.
+
+Le dépôt contient un client, des scripts d'export et de synchronisation, des mappings, un audit ACL et des tests dédiés. Il intègre également des principaux spécifiques aux agents et groupes Freshservice. L'existence de ces modules prouve que la source fait partie du périmètre développé, mais pas que toutes les ressources Freshservice sont déjà synchronisées avec la même couverture que SharePoint. Cette nuance sera maintenue dans les chapitres d'implémentation et d'évaluation.
+
+\subsection{Fraîcheur, traçabilité et idempotence}
+
+Un index RAG est une copie transformée des systèmes sources. Il peut devenir obsolète si les documents sont modifiés, déplacés ou supprimés sans mise à jour correspondante. Un pipeline robuste doit conserver des identifiants stables, enregistrer l'état de synchronisation, éviter les duplications et pouvoir retirer les fragments devenus invalides.
+
+La traçabilité nécessite également de relier chaque fragment à son document, sa page, son URL, son système source et sa collection. Ces informations sont présentes dans les payloads manipulés par le store Qdrant du projet. Elles permettent à l'interface d'afficher des sources et aux opérations de diagnostic de retrouver l'origine d'un résultat.
+
+\section{Sécurité, confidentialité et gouvernance}
+
+\subsection{Sécurité spécifique aux systèmes RAG}
+
+Un assistant RAG agrège plusieurs surfaces de risque : API de sources, extraction de fichiers, index vectoriel, modèle génératif, interface web et journaux. Les principales menaces concernent l'accès excessif aux sources, la fuite par récupération, l'injection d'instructions contenues dans un document, l'exposition de secrets, la journalisation de données sensibles et les dépendances logicielles vulnérables.
+
+La sécurité doit être appliquée à plusieurs niveaux :
+
+\begin{itemize}
+    \item limitation des permissions des connecteurs ;
+    \item chiffrement des communications et publication HTTPS ;
+    \item stockage séparé des secrets et refus des valeurs par défaut ;
+    \item filtrage ACL avant la génération ;
+    \item limitation des ports exposés ;
+    \item validation des fichiers et des payloads ;
+    \item journalisation utile sans reproduction excessive du contenu ;
+    \item sauvegarde et restauration contrôlées ;
+    \item tests d'accès négatifs avec des utilisateurs non autorisés.
+\end{itemize}
+
+Le déploiement du projet contient déjà plusieurs mécanismes : clés d'API, contrôles de santé, secrets obligatoires, Nginx, ports Qdrant liés à l'interface locale, réseau Docker et exécution locale du modèle. Ces mécanismes réduisent certains risques, sans constituer une certification de sécurité.
+
+\subsection{RGPD}
+
+Le Règlement général sur la protection des données encadre les traitements de données à caractère personnel dans l'Union européenne \citep{EU2016GDPR}. L'Assistant RAG DNSI peut traiter des identifiants d'utilisateurs, des historiques de conversation, des feedbacks et potentiellement des informations personnelles présentes dans les documents ou tickets.
+
+Les principes pertinents sont notamment la finalité déterminée, la minimisation, l'exactitude, la limitation de la conservation, la sécurité et la responsabilité du responsable de traitement. Leur application concrète suppose de définir les données conservées, la durée de rétention, les personnes habilitées, les modalités d'information et les procédures de suppression ou de rectification. Le simple fait d'héberger le modèle localement ne suffit pas à établir la conformité.
+
+\subsection{AI Act}
+
+Le règlement européen sur l'intelligence artificielle établit un cadre fondé sur les risques et des obligations variant selon le rôle des acteurs et l'usage du système \citep{EU2024AIAct}. Le présent mémoire ne classe pas automatiquement l'Assistant RAG DNSI comme système à haut risque. Une telle qualification dépendrait de sa finalité, de son contexte de décision et de son utilisation réelle.
+
+Même en dehors d'une catégorie à haut risque, des principes de gouvernance restent pertinents : documentation du fonctionnement, information des utilisateurs, supervision humaine, suivi des incidents, maîtrise des données et distinction claire entre une réponse générée et une source officielle. L'interface doit favoriser la vérification des sources et éviter de présenter la réponse du modèle comme une décision automatique faisant autorité.
