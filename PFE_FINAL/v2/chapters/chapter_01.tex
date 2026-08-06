@@ -10,7 +10,7 @@
 
 Les organisations produisent et conservent une quantité croissante de documents techniques, fonctionnels et opérationnels. Ces contenus sont indispensables au fonctionnement quotidien des équipes, mais leur disponibilité dans un système documentaire ne signifie pas qu'ils soient immédiatement accessibles ou facilement exploitables. Lorsqu'une information est répartie entre plusieurs documents, formulée avec un vocabulaire métier spécifique ou enfouie dans des procédures longues, la recherche manuelle devient lente et incertaine.
 
-Le projet présenté dans ce mémoire répond à cette difficulté dans un contexte d'entreprise. Il consiste à concevoir, développer et déployer un assistant conversationnel fondé sur une architecture de génération augmentée par récupération, ou Retrieval-Augmented Generation (RAG). La solution permet d'interroger en langage naturel des contenus provenant principalement de SharePoint et de Freshservice, puis de produire une réponse accompagnée des sources documentaires utilisées.
+Le projet présenté dans ce mémoire répond à cette difficulté dans un contexte d'entreprise. Il consiste à concevoir, développer et déployer un assistant conversationnel fondé sur une architecture de génération augmentée par récupération, ou Retrieval-Augmented Generation (RAG). La solution, nommée \textbf{Assistant RAG DNSI}, permet d'interroger en langage naturel des contenus provenant principalement de SharePoint et de Freshservice, puis de produire une réponse accompagnée des sources documentaires utilisées.
 
 Ce chapitre présente le contexte d'accueil du projet, le besoin métier, le périmètre réellement couvert par l'application et les contraintes ayant guidé sa conception. Il reformule également la problématique du mémoire à partir de l'implémentation réellement disponible dans le dépôt applicatif, sans reprendre les composants ou résultats non démontrés de la première version du document.
 
@@ -172,7 +172,7 @@ La première version du mémoire formulait une problématique centrée sur le Mo
 La problématique retenue est la suivante :
 
 \begin{quote}
-\textbf{Comment concevoir, intégrer et déployer dans un environnement d'entreprise un assistant conversationnel RAG capable d'interroger des connaissances issues de SharePoint et de Freshservice, de restituer des réponses traçables et de prendre en compte les contraintes de sécurité, de persistance et d'exploitation ?}
+\textbf{Comment concevoir, intégrer et déployer dans un environnement d'entreprise l'Assistant RAG DNSI, capable d'interroger des connaissances issues de SharePoint et de Freshservice, de restituer des réponses traçables et de prendre en compte les contraintes de sécurité, de persistance et d'exploitation ?}
 \end{quote}
 
 Cette question principale est précisée par quatre questions techniques :
@@ -201,7 +201,7 @@ Le mémoire n'attribuera pas au projet des résultats scientifiques ou statistiq
 
 \section{Périmètre et limites}
 
-Le périmètre du mémoire couvre la conception, le développement, l'intégration et le déploiement de l'assistant RAG M3. Il couvre les connecteurs documentaires, le traitement des requêtes, la recherche vectorielle, l'inférence locale, l'interface et les principaux mécanismes d'exploitation.
+Le périmètre du mémoire couvre la conception, le développement, l'intégration et le déploiement de l'Assistant RAG DNSI. Il couvre les connecteurs documentaires, le traitement des requêtes, la recherche vectorielle, l'inférence locale, l'interface et les principaux mécanismes d'exploitation.
 
 Les éléments suivants ne seront pas présentés comme acquis sans preuve supplémentaire :
 
