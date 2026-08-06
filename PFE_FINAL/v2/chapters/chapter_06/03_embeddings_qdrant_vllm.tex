@@ -1,0 +1,46 @@
+\section{Service d'embeddings}
+Le microservice charge \texttt{multilingual-e5-large} dans son lifespan, expose \texttt{/health} et \texttt{/embed}, applique les préfixes \texttt{query:} ou \texttt{passage:}, puis normalise les vecteurs lorsque la configuration l'active.
+
+\begin{table}[H]
+\centering
+\caption{Implémentation du service embeddings}
+\label{tab:embed_ch6}
+\begin{tabular}{p{3.4cm}p{9.8cm}}
+\toprule
+\textbf{Aspect} & \textbf{Implémentation} \\
+\midrule
+Chargement & SentenceTransformer charge LOCAL\_EMBEDDING\_MODEL\_PATH, par défaut /models/multilingual-e5-large. \\
+Contrat & POST /embed reçoit une liste de textes et embed\_type égal à query ou passage. \\
+Préfixage & Chaque texte reçoit le préfixe E5 correspondant avant encodage. \\
+Batch & La taille de lot est configurable par EMBED\_BATCH\_SIZE. \\
+Normalisation & Les vecteurs sont normalisés L2 lorsque EMBED\_NORMALIZE est activé. \\
+Résultat & La réponse retourne le chemin du modèle, la dimension, les vecteurs et le temps de traitement. \\
+Client backend & EmbeddingsClient utilise un AsyncClient HTTPX, un timeout et jusqu’à trois tentatives avec attente exponentielle et jitter. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le backend réutilise un \texttt{httpx.AsyncClient}. HTTPX recommande la réutilisation d'un client asynchrone afin de profiter du pooling de connexions et permet une configuration explicite des timeouts \citep{HTTPXAsync2026,HTTPXTimeouts2026}.
+
+\section{Recherche Qdrant}
+\begin{table}[H]
+\centering
+\caption{Implémentation du store Qdrant}
+\label{tab:qdrant_impl_ch6}
+\begin{tabular}{p{3.4cm}p{9.8cm}}
+\toprule
+\textbf{Aspect} & \textbf{Implémentation} \\
+\midrule
+Connexion & QdrantClient est initialisé avec URL, clé facultative et timeout. \\
+Collections & Les alias logiques permettent de sélectionner DNSI, Oxypharm, Freshservice ou plusieurs collections. \\
+Vecteur & Le chemin normal reçoit le query\_vector produit par le service embeddings ; l’encodage local est un repli. \\
+Recherche & La requête transmet le vecteur, la limite, le payload, le seuil éventuel et le filtre ACL. \\
+Payload & Chaque résultat est transformé en texte, métadonnées, score d’affichage et score brut. \\
+Sécurité & Le filtre Qdrant est complété par un post-filtrage applicatif des métadonnées. \\
+Compatibilité & search\_as\_faiss\_hits renvoie une structure compatible avec le pipeline historique, sans faire de FAISS le store actif. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Génération avec vLLM}
+Le client appelle \texttt{/v1/chat/completions} avec une authentification Bearer. Les erreurs transitoires sont réessayées et le budget de sortie est réduit lorsque la fenêtre de contexte disponible l'exige \citep{VLLMServer2026}.
