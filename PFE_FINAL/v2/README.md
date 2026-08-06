@@ -29,6 +29,12 @@ Les chapitres volumineux peuvent être divisés en sous-fichiers LaTeX afin de f
   - RAG, réécriture de requête, reranking hybride et limites du grounding ;
   - Qdrant, payloads, filtrage ACL, Mistral Small 3.1 24B et vLLM ;
   - SharePoint, Microsoft Graph, Freshservice, RGPD, AI Act et évaluation RAG.
+- Chapitre 3 — Méthodologie et démarche projet : **terminé**.
+  - Design Science Research adaptée au contexte d'entreprise ;
+  - hiérarchie des preuves et traçabilité des affirmations ;
+  - phases de cadrage, préparation documentaire, prototypage, industrialisation, sécurité et déploiement ;
+  - critères ISO/IEC 25010, stratégie de validation et tests disponibles ;
+  - reproductibilité, gestion des risques et menaces à la validité.
 
 ## Éléments explicitement exclus sans nouvelle preuve
 
