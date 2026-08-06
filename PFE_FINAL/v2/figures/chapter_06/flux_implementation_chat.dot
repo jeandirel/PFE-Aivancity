@@ -1,0 +1,33 @@
+digraph chat_flow {
+	bgcolor=white nodesep=0.22 pad=0.2 rankdir=LR ranksep=0.4
+	node [fillcolor=white fontname=Arial fontsize=8.8 margin="0.10,0.07" shape=box style="rounded,filled"]
+	edge [arrowsize=0.6 fontname=Arial fontsize=7.5]
+	q [label=Question]
+	st [label="Smalltalk ?"]
+	rw [label="Réécriture
+si dépendante de l’historique"]
+	cl [label="Classification
+RAG / direct"]
+	ac [label="Résolution ACL"]
+	em [label="Embedding E5"]
+	qd [label="Recherche Qdrant"]
+	rr [label="Reranking hybride"]
+	ct [label="Construction du contexte"]
+	gen [label="Génération vLLM
+ou abstention"]
+	clean [label="Nettoyage de la réponse"]
+	log [label="Persistance PostgreSQL"]
+	out [label="Réponse + sources"]
+	q -> st
+	st -> rw
+	rw -> cl
+	cl -> ac
+	ac -> em
+	em -> qd
+	qd -> rr
+	rr -> ct
+	ct -> gen
+	gen -> clean
+	clean -> log
+	log -> out
+}
