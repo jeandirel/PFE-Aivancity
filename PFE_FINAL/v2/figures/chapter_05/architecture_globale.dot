@@ -1,0 +1,45 @@
+digraph architecture {
+	bgcolor=white nodesep=0.35 pad=0.25 rankdir=LR ranksep=0.65
+	node [fillcolor=white fontname=Arial fontsize=10 margin="0.12,0.08" shape=box style="rounded,filled"]
+	edge [arrowsize=0.7 fontname=Arial fontsize=8]
+	subgraph cluster_external {
+		fontname=Arial fontsize=11 label="Sources et utilisateurs" style=rounded
+		user [label="Collaborateur\nnavigateur"]
+		sp [label="SharePoint\nMicrosoft Graph"]
+		fs [label="Freshservice\nAPI"]
+	}
+	subgraph cluster_edge {
+		fontname=Arial fontsize=11 label=Exposition style=rounded
+		nginx [label="Nginx\nTLS / reverse proxy\n80-443"]
+	}
+	subgraph cluster_app {
+		fontname=Arial fontsize=11 label="Couche applicative" style=rounded
+		ui [label="Interface Streamlit\n8502\nSSO + historique"]
+		backend [label="Backend FastAPI\n8000 interne\norchestration RAG"]
+		embed [label="Service embeddings\nmultilingual-e5-large\n8001"]
+		llm [label="Serveur vLLM\nMistral Small 3.1 24B\n8000 interne / 8002 hôte"]
+	}
+	subgraph cluster_data {
+		fontname=Arial fontsize=11 label="Données" style=rounded
+		qdrant [label="Qdrant\ncollections vectorielles\n6333-6334"]
+		pg [label="PostgreSQL\nsessions, interactions,\nfeedbacks"]
+	}
+	subgraph cluster_ingestion {
+		fontname=Arial fontsize=11 label="Pipelines documentaires" style=rounded
+		sp_pipe [label="Export / mapping /\nsynchronisation SharePoint"]
+		fs_pipe [label="Export / mapping /\nsynchronisation Freshservice"]
+	}
+	user -> nginx [label=HTTPS]
+	nginx -> ui [label=proxy]
+	ui -> backend [label="HTTP/JSON + X-API-Key"]
+	backend -> embed [label="/embed"]
+	backend -> qdrant [label="recherche + filtre ACL"]
+	backend -> llm [label="/v1/chat/completions"]
+	backend -> pg [label=SQLAlchemy]
+	sp -> sp_pipe [label="Graph API"]
+	fs -> fs_pipe [label=API]
+	sp_pipe -> embed [label=passages]
+	fs_pipe -> embed [label=passages]
+	sp_pipe -> qdrant [label="upsert + métadonnées"]
+	fs_pipe -> qdrant [label="upsert + ACL"]
+}
