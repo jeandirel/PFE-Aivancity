@@ -1,0 +1,103 @@
+%==============================================================================
+% MEMOIRE PFE - VERSION 2 COMPLETE
+% Jean Direl NZE - Aivancity PGE5 - 2025/2026
+%==============================================================================
+\documentclass[12pt,a4paper,oneside]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{left=2.7cm,right=2.3cm,top=2.5cm,bottom=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{fancyhdr}
+
+\setlength{\parindent}{0.8cm}
+\setlength{\parskip}{0.25em}
+\setlist[itemize]{topsep=3pt,itemsep=2pt}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Assistant RAG DNSI}
+\fancyhead[R]{Mémoire PFE - Version 2}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{15pt}
+
+\hypersetup{
+  pdftitle={Assistant RAG DNSI - Mémoire PFE Version 2},
+  pdfauthor={Jean Direl NZE},
+  pdfsubject={Conception, intégration et déploiement d'un assistant RAG d'entreprise},
+  pdfkeywords={RAG, DNSI, SharePoint, Freshservice, Qdrant, vLLM, FastAPI, Streamlit}
+}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2.5cm}
+{\Large Aivancity - Programme Grande École PGE5\par}
+\vspace{1.5cm}
+{\Huge\bfseries Assistant RAG DNSI\par}
+\vspace{0.5cm}
+{\LARGE Conception, intégration et déploiement d'un assistant conversationnel RAG pour l'accès contrôlé aux connaissances d'entreprise\par}
+\vfill
+{\Large Mémoire de Projet de Fin d'Études\par}
+\vspace{0.8cm}
+{\large Jean Direl NZE\par}
+\vspace{0.4cm}
+{\large Année académique 2025--2026\par}
+\vfill
+{\small Version 2 révisée à partir du dépôt applicatif comme source de vérité\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\listoftables
+\clearpage
+\listoffigures
+\clearpage
+
+\pagenumbering{arabic}
+\input{chapters/chapter_01}
+\input{chapters/chapter_02}
+\input{chapters/chapter_03}
+\input{chapters/chapter_04}
+\input{chapters/chapter_05}
+\input{chapters/chapter_06}
+\input{chapters/chapter_07}
+\input{chapters/chapter_08}
+
+\clearpage
+\bibliographystyle{apalike}
+\bibliography{
+  bibliography/references_chapter_01,
+  bibliography/references_chapter_02,
+  bibliography/references_chapter_03,
+  bibliography/references_chapter_04,
+  bibliography/references_chapter_05,
+  bibliography/references_chapter_06,
+  bibliography/references_chapter_07,
+  bibliography/references_chapter_08
+}
+
+\end{document}
