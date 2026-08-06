@@ -1,0 +1,32 @@
+digraph implementation_modules {
+	bgcolor=white nodesep=0.28 pad=0.2 rankdir=TB ranksep=0.35
+	node [fillcolor=white fontname=Arial fontsize=9.5 margin="0.12,0.08" shape=box style="rounded,filled"]
+	edge [arrowsize=0.65 fontname=Arial fontsize=8]
+	ui [label="services/ui
+MistralChat.py · sso.py · api_clients.py"]
+	api [label="services/backend/app/main.py
+FastAPI · routes · middlewares · orchestration"]
+	rag [label="query_classifier.py · rag_pipeline.py
+réécriture · classification · reranking · prompts"]
+	acl [label="security_acl.py
+principaux · Graph · Freshservice · filtre Qdrant"]
+	embed [label="services/embeddings/main.py
+multilingual-e5-large · /embed"]
+	vs [label="vector_store_qdrant.py
+collections · payloads · recherche"]
+	llm [label="llm_client.py
+HTTPX · vLLM · retries · fenêtre de contexte"]
+	db [label="db.py
+SQLAlchemy · PostgreSQL · sessions · interactions"]
+	conn [label="connectors_sharepoint / connectors_freshservice
+export · mapping · synchronisation · indexation"]
+	ui -> api [label="HTTP/JSON"]
+	api -> rag
+	api -> acl
+	api -> embed [label="/embed"]
+	api -> vs [label="vecteur + filtre"]
+	api -> llm [label="/v1/chat/completions"]
+	api -> db [label=ORM]
+	conn -> embed [label="passage:"]
+	conn -> vs [label=upsert]
+}
