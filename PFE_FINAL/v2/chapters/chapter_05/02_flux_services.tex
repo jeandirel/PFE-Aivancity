@@ -1,0 +1,92 @@
+
+\section{Architecture globale}
+
+La solution est organisée en quatre ensembles : exposition, couche applicative, services d'intelligence artificielle et stockages. Les pipelines documentaires alimentent Qdrant indépendamment du traitement conversationnel en ligne.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=8mm and 12mm,
+  box/.style={draw, rounded corners, align=center, minimum width=3.1cm, minimum height=1.1cm},
+  flow/.style={-Latex, thick}
+]
+\node[box] (user) {Collaborateur\\Navigateur};
+\node[box, right=of user] (nginx) {Nginx\\TLS / reverse proxy};
+\node[box, right=of nginx] (ui) {Streamlit\\SSO et interface};
+\node[box, right=of ui] (backend) {FastAPI\\Orchestration RAG};
+\node[box, below left=of backend] (embed) {Embeddings\\multilingual-e5-large};
+\node[box, below=of backend] (qdrant) {Qdrant\\Vecteurs et payloads};
+\node[box, below right=of backend] (llm) {vLLM\\Mistral Small 3.1 24B};
+\node[box, right=of backend] (pg) {PostgreSQL\\Interactions};
+\draw[flow] (user) -- (nginx);
+\draw[flow] (nginx) -- (ui);
+\draw[flow] (ui) -- (backend);
+\draw[flow] (backend) -- (embed);
+\draw[flow] (backend) -- (qdrant);
+\draw[flow] (backend) -- (llm);
+\draw[flow] (backend) -- (pg);
+\end{tikzpicture}
+\caption{Architecture logique de l'Assistant RAG DNSI}
+\label{fig:architecture_globale_ch5}
+\end{figure}
+
+\subsection{Services de production}
+
+\begin{table}[H]
+\centering
+\caption{Services de la stack active}
+\label{tab:services_ch5}
+\begin{tabular}{p{2.0cm}p{2.4cm}p{1.8cm}p{4.4cm}p{3.1cm}}
+\toprule
+\textbf{Service} & \textbf{Technologie} & \textbf{Port} & \textbf{Rôle} & \textbf{Point d'attention} \\
+\midrule
+Nginx & nginx:1.27-alpine & 80/443 & Terminaison TLS et reverse proxy vers l’interface. & Certificats montés en lecture seule. \\
+Interface & Streamlit & 8502 & SSO, saisie de la question, historique, sources, visualisation PDF et feedback. & Dépend du backend sain. \\
+Backend & FastAPI & 8000 interne & Orchestration RAG, routes, ACL, persistance et gestion de charge. & Non exposé directement par le Compose de production. \\
+Embeddings & FastAPI + SentenceTransformers & 8001 & Encodage query/passage avec multilingual-e5-large et normalisation L2. & Modèle monté depuis /models. \\
+LLM & vLLM OpenAI-compatible & 8000 interne ; 8002 loopback & Inférence Mistral Small 3.1 24B. & GPU requis ; clé API ; healthcheck. \\
+Qdrant & qdrant/qdrant & 6333/6334 loopback & Collections vectorielles, payloads, recherche et filtrage. & Persistance dans qdrant\_data. \\
+PostgreSQL & postgres:16-alpine & 5432 interne & Sessions, interactions, sources, métadonnées et feedbacks. & Volume pgdata ; mot de passe obligatoire. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Topologie réseau}
+
+Tous les services appartiennent au réseau Docker bridge \texttt{chatbot\_net}. Le backend n'est pas publié directement sur l'hôte dans la configuration de production ; l'interface l'atteint par son nom de service. vLLM et Qdrant sont publiés sur l'interface loopback, tandis que Nginx expose les ports web.
+
+\begin{table}[H]
+\centering
+\caption{Contrats réseau principaux}
+\label{tab:ports_ch5}
+\begin{tabular}{p{3.5cm}p{3.0cm}p{2.0cm}p{5.0cm}}
+\toprule
+\textbf{Flux} & \textbf{Protocole} & \textbf{Port} & \textbf{Finalité} \\
+\midrule
+Navigateur -> Nginx & HTTPS & 443 & Accès utilisateur. \\
+Nginx -> Streamlit & HTTP & 8502 & Routage interne de l’interface. \\
+Streamlit -> FastAPI & HTTP/JSON & 8000 & Routes de santé, session, chat, historique et feedback. \\
+FastAPI -> Embeddings & HTTP/JSON & 8001 & Encodage des requêtes et passages. \\
+FastAPI -> Qdrant & HTTP/gRPC client & 6333/6334 & Recherche vectorielle et filtres de payload. \\
+FastAPI -> vLLM & HTTP compatible OpenAI & 8000 & Appel /v1/chat/completions. \\
+FastAPI -> PostgreSQL & TCP/SQL & 5432 & Persistance applicative. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Flux d'une requête RAG}
+
+\begin{enumerate}
+\item L’interface récupère l’identité et les groupes disponibles dans les claims SSO, puis construit la requête de chat.
+\item Le client HTTP envoie au backend la question, l’historique, l’identifiant de conversation, le périmètre documentaire et les principaux disponibles.
+\item FastAPI vérifie la clé d’API, applique la limite globale de requêtes et qualifie la question avec le classifieur.
+\item Lorsque la recherche documentaire est nécessaire, le backend demande au service d’embeddings d’encoder la requête avec la convention E5 « query: ».
+\item Le backend construit le filtre ACL à partir des principaux normalisés et interroge une ou plusieurs collections Qdrant.
+\item Les résultats sont harmonisés, éventuellement complétés par un score lexical, rerankés et réduits aux extraits utiles.
+\item Le prompt système impose l’utilisation des extraits autorisés et définit le comportement d’abstention lorsque l’information n’est pas présente.
+\item Le client vLLM appelle l’endpoint /v1/chat/completions avec le modèle servi et ajuste le budget de sortie lorsque la fenêtre de contexte l’exige.
+\item La réponse, les sources et les métadonnées sont enregistrées dans PostgreSQL avant d’être renvoyées à l’interface.
+\item Streamlit affiche la réponse, les sources et le visualiseur documentaire, puis permet d’associer un feedback à l’interaction.
+\end{enumerate}
+
+Le backend est le point d'orchestration. L'interface n'appelle directement ni Qdrant ni vLLM dans le chemin de production décrit.
