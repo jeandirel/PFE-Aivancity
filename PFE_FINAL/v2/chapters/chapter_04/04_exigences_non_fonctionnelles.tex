@@ -1,0 +1,58 @@
+\section{Exigences non fonctionnelles}
+
+Les exigences non fonctionnelles sont formulées avec un critère de vérification. Elles ne constituent pas une déclaration de performance déjà atteinte ; elles définissent ce qui doit être testé ou observé.
+
+\begin{table}[H]
+\centering
+\caption{Exigences non fonctionnelles et critères de vérification}
+\label{tab:nfr_ch4}
+\begin{tabular}{p{1.2cm}p{2cm}p{6.4cm}p{4.1cm}}
+\toprule
+\textbf{ID} & \textbf{Catégorie} & \textbf{Exigence} & \textbf{Critère de vérification} \\
+\midrule
+NFR01 & Sécurité & Les routes applicatives non publiques doivent être protégées par une clé API entre l'interface et le backend. & Requête sans clé valide rejetée avec un statut 401. \\
+NFR02 & Sécurité & Les passages documentaires doivent être filtrés à partir des principaux normalisés et des métadonnées ACL. & Test positif pour un principal autorisé et test négatif pour un principal non autorisé. \\
+NFR03 & Sécurité & Les contenus réservés aux agents Freshservice doivent être distingués des contenus publics ou organisationnels. & Test d'accès avec un compte agent reconnu puis avec un compte non agent. \\
+NFR04 & Confidentialité & Le modèle et les embeddings doivent être exécutés dans l'infrastructure contrôlée lorsque la stack de production locale est utilisée. & Aucun appel génératif public dans le chemin de production décrit ; services vLLM et embeddings locaux disponibles. \\
+NFR05 & Traçabilité & Chaque interaction doit conserver la requête, la réponse, les sources, les métadonnées, le timestamp et les feedbacks éventuels. & Vérification des enregistrements dans PostgreSQL. \\
+NFR06 & Fiabilité & Chaque service critique doit exposer ou utiliser un contrôle de santé. & Healthchecks Docker pour UI, backend, embeddings, vLLM, PostgreSQL et Qdrant. \\
+NFR07 & Résilience & Le backend doit limiter les requêtes concurrentes et appliquer une contre-pression sur les appels LLM et embeddings. & Réponse 429 avec Retry-After lorsque les seuils configurés sont atteints. \\
+NFR08 & Maintenabilité & L'interface, l'API, les embeddings, l'inférence et les stockages doivent être séparés en services ou modules distincts. & Remplacement ou redémarrage d'un composant sans modification structurelle des autres contrats. \\
+NFR09 & Déployabilité & La solution doit être assemblable avec Docker Compose et publiée derrière Nginx en HTTPS lorsque le profil proxy est activé. & Démarrage de la stack, validation Nginx et accès à l'interface. \\
+NFR10 & Persistance & Les données PostgreSQL et Qdrant doivent être conservées dans des volumes ou répertoires persistants. & Redémarrage des conteneurs sans perte des données attendues. \\
+NFR11 & Compatibilité & L'interface doit pouvoir appeler le backend en local ou sur le réseau Docker selon l'environnement. & Résolution automatique de BACKEND\_URL et test dans les deux modes. \\
+NFR12 & Observabilité & Les erreurs, états de santé, interactions et feedbacks nécessaires à l'exploitation doivent être consultables. & Logs de services, endpoint /health et page Monitoring disponibles. \\
+NFR13 & Qualité de réponse & Le système ne doit pas présenter comme documentée une information absente des extraits utilisés. & Jeu de questions incluant des cas sans réponse et vérification du message d'abstention. \\
+NFR14 & Protection des secrets & Les mots de passe et clés ne doivent pas être codés en dur dans le mémoire ou dans le code versionné. & Variables d'environnement et refus de démarrer avec certaines valeurs faibles ou de substitution. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sécurité et gestion des risques}
+
+L'architecture applique plusieurs contrôles complémentaires : authentification Microsoft côté interface, clé API entre l'interface et le backend, normalisation des principaux, filtre Qdrant, distinction des contenus Freshservice et protection des secrets par variables d'environnement.
+
+Ces contrôles réduisent le risque sans constituer une garantie absolue. Le profil NIST consacré à l'IA générative recommande d'intégrer la fiabilité et la gestion des risques sur l'ensemble du cycle de vie \citep{NISTGAI2024}. Pour ce projet, les risques prioritaires sont la récupération d'un document non autorisé, la génération d'une réponse non fondée, l'exposition d'un secret, la saturation des services et l'utilisation d'une métadonnée ACL incomplète.
+
+\section{Contrats d'interface}
+
+\begin{table}[H]
+\centering
+\caption{Interfaces principales entre composants}
+\label{tab:interfaces_ch4}
+\begin{tabular}{p{3cm}p{2.2cm}p{4.3cm}p{4.4cm}}
+\toprule
+\textbf{Interface} & \textbf{Protocole} & \textbf{Opérations} & \textbf{Contrainte} \\
+\midrule
+UI -> Backend & HTTP/JSON & /health, /auth/user-session, /chat, /interactions, /feedback & Clé X-API-Key pour les routes protégées. \\
+Backend -> Embeddings & HTTP/JSON & /embed, /health & Préfixe query ou passage ; normalisation configurable. \\
+Backend -> Qdrant & API Qdrant & Recherche et comptage de collections & Filtre ACL transmis à la recherche. \\
+Backend -> vLLM & API compatible OpenAI & Chat/completions et healthcheck & Clé VLLM\_API\_KEY ; modèle servi localement. \\
+Backend -> PostgreSQL & SQLAlchemy & Sessions, interactions et feedbacks & Pooling configuré pour PostgreSQL. \\
+Connecteurs -> SharePoint & Microsoft Graph/HTTP & Export, mapping et synchronisation & Identifiants et permissions fournis par l'environnement. \\
+Connecteurs -> Freshservice & API Freshservice/HTTP & Export, mapping, agents, ACL et synchronisation & Clé et domaine non exposés dans le mémoire. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Les contrats d'interface permettent de conserver une séparation claire des responsabilités. FastAPI orchestre le traitement applicatif ; vLLM sert le modèle ; le service d'embeddings encode les textes ; Qdrant effectue la recherche vectorielle ; PostgreSQL persiste les sessions et interactions.
