@@ -1,0 +1,68 @@
+\section{Critères d'acceptation}
+
+\begin{table}[H]
+\centering
+\caption{Critères d'acceptation proposés}
+\label{tab:acceptance_ch4}
+\begin{tabular}{p{1.2cm}p{2.6cm}p{10cm}}
+\toprule
+\textbf{ID} & \textbf{Domaine} & \textbf{Critère} \\
+\midrule
+AC01 & Authentification & Un utilisateur authentifié arrive dans l'application avec des claims exploitables ; un flux invalide ne crée pas de session. \\
+AC02 & Question RAG & Une question métier déclenche la recherche et renvoie une réponse ainsi qu'une liste de sources lorsque SHOW\_SOURCES est activé. \\
+AC03 & Abstention & Une question dont la réponse n'est pas présente conduit au message de non-résultat prévu par le prompt. \\
+AC04 & ACL & Deux profils disposant de droits différents n'obtiennent pas les mêmes passages lorsque les métadonnées l'exigent. \\
+AC05 & Freshservice & Un utilisateur non reconnu comme agent ne reçoit pas un contenu réservé aux agents. \\
+AC06 & Historique & Après redémarrage de l'interface, les interactions persistées peuvent être récupérées pour la même session. \\
+AC07 & Feedback & Un avis envoyé depuis l'interface modifie les champs de feedback de l'interaction correspondante. \\
+AC08 & Surcharge & Lorsque le nombre de requêtes atteint la limite, le backend renvoie 429 et l'interface affiche un message avec temporisation. \\
+AC09 & Santé & Les endpoints et healthchecks indiquent l'état des services critiques de la stack. \\
+AC10 & Synchronisation & Un document ajouté, modifié ou supprimé est reflété dans la collection après exécution du pipeline prévu. \\
+AC11 & Source PDF & Une source contenant un chemin PDF valide peut être ouverte dans le visualiseur de l'interface. \\
+AC12 & Persistance & Les volumes PostgreSQL et Qdrant conservent les données après redémarrage contrôlé. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Matrice de traçabilité}
+
+La matrice relie les exigences aux cas d'usage, aux fichiers ou services observés et au moyen de validation attendu. Elle facilite les corrections futures : une évolution d'un service peut être répercutée sur l'exigence et son test associé.
+
+\begin{table}[H]
+\centering
+\caption{Traçabilité exigences - implémentation - validation}
+\label{tab:trace_ch4}
+\begin{tabular}{p{2.2cm}p{2.4cm}p{5cm}p{4.3cm}}
+\toprule
+\textbf{Exigence} & \textbf{Cas d'usage} & \textbf{Implémentation} & \textbf{Validation} \\
+\midrule
+FR01 & UC01 & services/ui/sso.py & Test du flux OAuth et des claims. \\
+FR02 & UC02 & backend /auth/user-session ; db.py & Test création puis réutilisation de session. \\
+FR03-FR08 & UC04-UC05 & main.py ; rag\_pipeline.py ; vector\_store\_qdrant.py & Tests unitaires, intégration et scénarios métier. \\
+FR09-FR10 & UC06 & MistralChat.py ; pdf\_utils.py & Vérification affichage source et ouverture PDF. \\
+FR11 & UC02-UC07 & db.py ; /interactions & Test persistance et regroupement par conversation. \\
+FR12 & UC08 & /feedback ; champs feedback\_* & Test de mise à jour de l'interaction. \\
+FR13 & UC04 & api\_clients.py ; middlewares backend & Tests timeout, 429 et 503. \\
+FR14 & UC09 & 02\_\_Monitoring.py & Test d'accès administrateur et contrôle des données affichées. \\
+FR15 & UC10 & connectors\_sharepoint ; connectors\_freshservice & Test export, mapping, sync et indexation. \\
+NFR02-NFR03 & UC05 & security\_acl.py & Tests ACL positifs et négatifs. \\
+NFR06-NFR10 & Exploitation & docker-compose.prod.yml & Test de démarrage, santé, redémarrage et persistance. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Limites de la spécification}
+
+\begin{itemize}
+    \item les critères de latence, débit ou disponibilité ne sont pas chiffrés lorsqu'aucun résultat archivé ne permet de les confirmer ;
+    \item la présence d'un module prouve une capacité d'implémentation, mais pas nécessairement un usage systématique en production ;
+    \item la couverture réelle des groupes Microsoft et les cas de group overage doivent être validés avec la configuration Entra ID ;
+    \item le mode de repli pour des documents sans métadonnées ACL doit être évalué selon la sensibilité du corpus ;
+    \item les exigences ont été vérifiées contre le code actif et ne reposent pas uniquement sur les documents de cadrage.
+\end{itemize}
+
+\section{Conclusion}
+
+Le chapitre a transformé le besoin métier en acteurs, cas d'usage, exigences, contrats et critères d'acceptation traçables. Le périmètre fonctionnel central est confirmé par l'interface Streamlit, l'API FastAPI, Qdrant, vLLM, PostgreSQL, le module SSO et les connecteurs SharePoint et Freshservice.
+
+La principale exigence transversale est la maîtrise du passage entre identité, droits documentaires, récupération et génération. Le chapitre suivant présente l'architecture détaillée retenue pour satisfaire ces exigences.
