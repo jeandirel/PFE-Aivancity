@@ -1,63 +1,55 @@
-# Mémoire PFE - Version 2
+# Mémoire PFE - Version 2 finalisée
 
-Cette arborescence contient la réécriture contrôlée du mémoire de Jean Direl NZE.
+Cette arborescence contient la réécriture contrôlée du mémoire de Jean Direl NZE consacrée à l'**Assistant RAG DNSI**.
 
 ## Sources de vérité
 
 1. `jeandirel/PocChatbotM3-clean` pour l'implémentation, les configurations et le déploiement réels.
 2. Les consignes Aivancity présentes dans le dépôt du mémoire.
-3. Les sources scientifiques et documentations officielles vérifiées.
+3. Les publications scientifiques et documentations officielles vérifiées.
 4. Le mémoire V1 uniquement pour récupérer les éléments confirmés.
 
 ## Règles de rédaction
 
-- aucune fonctionnalité non démontrée dans le projet ne doit être présentée comme réalisée ;
-- aucune métrique ne doit être publiée sans résultat traçable ;
-- les composants historiques ou legacy doivent être explicitement distingués de la stack active ;
-- les perspectives ne doivent jamais être décrites au passé ;
-- les informations sensibles doivent être anonymisées.
+- aucune fonctionnalité non démontrée dans le projet n'est présentée comme réalisée ;
+- aucune métrique n'est publiée sans résultat traçable ;
+- les composants historiques ou legacy sont distingués de la stack active ;
+- une perspective n'est jamais décrite comme une réalisation ;
+- les informations sensibles doivent être anonymisées ;
+- le code actif et `docker-compose.prod.yml` priment sur les documents historiques.
 
-## Organisation des chapitres
+## État des chapitres
 
-Les chapitres volumineux peuvent être divisés en sous-fichiers LaTeX afin de faciliter leur audit et leur maintenance. Le fichier principal du chapitre conserve les commandes `\input` nécessaires à la compilation.
+1. Contexte organisationnel, besoin métier et problématique - **terminé**.
+2. État de l'art et fondements techniques - **terminé**.
+3. Méthodologie et démarche projet - **terminé**.
+4. Analyse des besoins et spécifications - **terminé**.
+5. Architecture de la solution - **terminé**.
+6. Implémentation de la solution - **terminé**.
+7. Évaluation, résultats traçables et discussion - **terminé**.
+8. Conclusion générale, limites et perspectives - **terminé**.
 
-## État d'avancement
+## Compilation
 
-- Chapitre 1 — Contexte organisationnel, besoin métier et problématique : **terminé**.
-- Chapitre 2 — État de l'art et fondements techniques de l'Assistant RAG DNSI : **terminé**.
-  - recherche lexicale, Transformer, embeddings et `multilingual-e5-large` ;
-  - RAG, réécriture de requête, reranking hybride et limites du grounding ;
-  - Qdrant, payloads, filtrage ACL, Mistral Small 3.1 24B et vLLM ;
-  - SharePoint, Microsoft Graph, Freshservice, RGPD, AI Act et évaluation RAG.
-- Chapitre 3 — Méthodologie et démarche projet : **terminé**.
-  - Design Science Research adaptée au contexte d'entreprise ;
-  - hiérarchie des preuves et traçabilité des affirmations ;
-  - phases de cadrage, préparation documentaire, prototypage, industrialisation, sécurité et déploiement ;
-  - critères ISO/IEC 25010, stratégie de validation et tests disponibles ;
-  - reproductibilité, gestion des risques et menaces à la validité.
-- Chapitre 4 — Analyse des besoins et spécifications : **terminé**.
-  - périmètre, parties prenantes et dix cas d'usage principaux ;
-  - quinze exigences fonctionnelles et exigences relatives aux données ;
-  - quatorze exigences non fonctionnelles assorties de critères de vérification ;
-  - contrats d'interface entre Streamlit, FastAPI, embeddings, Qdrant, vLLM et PostgreSQL ;
-  - critères d'acceptation et matrice de traçabilité vers le code et les tests.
-- Chapitre 5 — Architecture de la solution : **terminé**.
-  - architecture des services Streamlit, FastAPI, embeddings, Qdrant, vLLM, PostgreSQL et Nginx ;
-  - flux conversationnel et pipeline documentaire hors ligne ;
-  - architecture de sécurité, persistance, déploiement Docker Compose et résilience ;
-  - choix, compromis et limites architecturales.
-- Chapitre 6 — Implémentation de la solution : **terminé**.
-  - interface Streamlit et SSO OAuth 2.0 avec PKCE et validation JWT ;
-  - routes FastAPI, middlewares, contre-pression et cycle de vie des ressources ;
-  - pipeline `/chat`, classification heuristique, réécriture, reranking et prompts stricts ;
-  - service E5, recherche Qdrant, client vLLM et persistance SQLAlchemy/PostgreSQL ;
-  - ACL Microsoft Graph et Freshservice, connecteurs documentaires, tests et limites.
+Le fichier `main.tex` assemble les huit chapitres et les huit bibliographies :
 
-## Éléments explicitement exclus sans nouvelle preuve
+```bash
+cd PFE_FINAL/v2
+pdflatex main.tex
+bibtex main
+pdflatex main.tex
+pdflatex main.tex
+```
 
-- AntiGravity comme nom du produit ;
-- MCP comme composant de production ;
-- Mistral 7B sur CPU comme modèle actif ;
-- `all-mpnet-base-v2` comme modèle d'embeddings actif ;
-- FAISS comme base vectorielle principale ;
-- métriques, enquêtes ou tests statistiques sans résultats traçables.
+## Positionnement de la version finale
+
+La V2 décrit la stack active : Streamlit, FastAPI, `multilingual-e5-large`, Qdrant, vLLM, Mistral Small 3.1 24B, PostgreSQL, Nginx, SharePoint et Freshservice.
+
+Le chapitre 7 distingue explicitement :
+
+- les mécanismes confirmés dans le code ;
+- les 66 fonctions de test présentes ;
+- les tests dont l'exécution n'est pas archivée ;
+- les métriques qui restent à produire.
+
+Les notes d'audit sur les composants historiques sont conservées dans ce README et dans l'historique Git, pas dans le corps académique du mémoire.
