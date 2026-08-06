@@ -1,0 +1,81 @@
+\section{Introduction et périmètre de la revue}
+
+Le chapitre précédent a présenté le besoin métier auquel répond l'Assistant RAG DNSI : faciliter l'accès à des connaissances internes distribuées entre SharePoint et Freshservice, tout en conservant la traçabilité des réponses et en prenant en compte les droits d'accès. Le présent chapitre établit les fondements scientifiques et techniques nécessaires à la compréhension de la solution.
+
+La revue est volontairement centrée sur les composants réellement observés dans le dépôt applicatif. Elle traite donc des modèles Transformer, des embeddings de texte, de la recherche dense, de la génération augmentée par récupération, des bases vectorielles, de l'inférence locale, des connecteurs d'entreprise, du contrôle d'accès documentaire et de l'évaluation des systèmes RAG. Elle ne présente pas le Model Context Protocol comme un composant du système, car aucune utilisation de ce protocole n'est démontrée dans la stack active. De même, FAISS est abordé comme une bibliothèque historique de recherche vectorielle et non comme le moteur principal de la version déployée, laquelle utilise Qdrant.
+
+La littérature scientifique fournit des principes généraux et des résultats obtenus sur des jeux de données publics. Ces résultats ne sont pas transposés automatiquement au corpus de l'entreprise. Ils servent à justifier les choix d'architecture et à identifier les risques, mais l'efficacité réelle de l'Assistant RAG DNSI doit être évaluée séparément sur ses documents, ses questions et ses contraintes opérationnelles.
+
+\section{De la recherche lexicale à la recherche sémantique}
+
+\subsection{Recherche lexicale et limites en environnement métier}
+
+Les moteurs de recherche documentaires classiques reposent principalement sur des représentations lexicales. Une requête et un document sont rapprochés lorsqu'ils partagent les mêmes termes ou des variantes proches. Les approches issues du modèle vectoriel, de TF--IDF ou de BM25 restent efficaces lorsque l'utilisateur connaît le vocabulaire exact du corpus. Elles sont également interprétables : un document est classé parce qu'il contient certains termes, pondérés selon leur fréquence dans le document et leur rareté dans la collection.
+
+Dans un corpus métier, la seule correspondance lexicale présente toutefois plusieurs limites. Une procédure peut employer le nom officiel d'un écran alors que l'utilisateur utilise une expression usuelle. Un acronyme peut désigner une application ou un processus sans que sa forme développée figure dans la question. Inversement, deux documents peuvent partager de nombreux mots tout en répondant à des besoins différents. La recherche sémantique vise à compléter cette logique en représentant le sens global d'une question et d'un passage dans un espace vectoriel.
+
+La distinction entre recherche lexicale et recherche sémantique ne conduit pas nécessairement à choisir exclusivement l'une ou l'autre. Dans les environnements techniques, les codes, noms d'applications, numéros d'écran et expressions exactes conservent une forte valeur. Une stratégie hybride peut donc combiner la proximité sémantique avec des signaux lexicaux. Cette logique est visible dans le dépôt applicatif : la recherche Qdrant fournit un score sémantique, puis le pipeline ajoute des signaux fondés sur les mots, les expressions et les intitulés de documents avant le classement final.
+
+\begin{table}[H]
+\centering
+\caption{Comparaison des principales familles de recherche documentaire}
+\label{tab:recherche_familles}
+\begin{tabular}{p{3cm}p{4cm}p{4cm}p{3.5cm}}
+\toprule
+\textbf{Approche} & \textbf{Forces} & \textbf{Limites} & \textbf{Utilité pour le projet} \\
+\midrule
+Lexicale & Bonne prise en compte des termes exacts, codes et acronymes ; calcul rapide ; interprétation simple. & Sensible aux synonymes et aux reformulations ; faible compréhension du contexte. & Signal complémentaire pour les noms de documents et le vocabulaire métier. \\
+Dense / sémantique & Recherche de passages proches par le sens ; meilleure robustesse aux reformulations. & Dépendance au modèle d'embeddings ; résultats parfois thématiquement proches mais non répondants. & Mécanisme principal de présélection dans Qdrant. \\
+Hybride & Combine correspondances sémantiques et lexicales ; meilleure maîtrise des termes spécialisés. & Réglage plus complexe ; pondérations à valider sur le corpus réel. & Principe proche du reranking heuristique du backend. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Le Transformer comme fondement des représentations modernes}
+
+L'architecture Transformer, introduite par \citet{Vaswani2017}, remplace les traitements séquentiels des réseaux récurrents par des mécanismes d'attention. Chaque élément d'une séquence peut pondérer les autres éléments afin de construire une représentation dépendante du contexte. L'attention produit, à partir de matrices de requêtes, de clés et de valeurs, une combinaison pondérée des informations disponibles :
+
+\begin{equation}
+\operatorname{Attention}(Q,K,V)=\operatorname{softmax}\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V.
+\end{equation}
+
+Cette architecture permet de préentraîner des modèles sur de grands corpus, puis de les adapter à différentes tâches. Deux usages sont importants pour l'Assistant RAG DNSI. Le premier est l'encodage : un modèle transforme une question ou un passage en vecteur. Le second est la génération : un modèle autoregressif produit une réponse textuelle à partir de la question et des passages récupérés.
+
+Ces deux fonctions doivent être distinguées. Le modèle d'embeddings n'est pas chargé de rédiger la réponse ; il sert à retrouver les contenus pertinents. Le modèle génératif ne parcourt pas directement l'ensemble du corpus ; il reçoit un contexte sélectionné par le retriever. Cette séparation rend possible l'évolution indépendante de la base documentaire et du modèle de langage.
+
+\section{Embeddings de texte et recherche dense}
+
+\subsection{Bi-encodeurs et représentations de phrases}
+
+Les embeddings sont des vecteurs numériques représentant des textes dans un espace de dimension fixe. Deux textes sémantiquement proches doivent produire des vecteurs proches. Pour la recherche à grande échelle, les architectures de type bi-encodeur calculent séparément le vecteur de la requête et celui des passages. Les vecteurs des documents peuvent ainsi être précalculés et stockés dans un index.
+
+\citet{Reimers2019} ont montré avec Sentence-BERT qu'une architecture siamoise permet de produire des représentations de phrases comparables par similarité cosinus, en évitant de réévaluer chaque paire question-document avec un Transformer complet. \citet{Karpukhin2020} ont ensuite démontré l'intérêt des représentations denses pour la récupération de passages dans des tâches de question-réponse ouvertes. Ces travaux ne prouvent pas qu'un retriever dense surpasse systématiquement une méthode lexicale dans tous les domaines, mais ils établissent la faisabilité et l'intérêt des bi-encodeurs pour la recherche sémantique.
+
+La similarité cosinus entre une requête $q$ et un passage $p$ est définie par :
+
+\begin{equation}
+\operatorname{cos}(q,p)=\frac{\mathbf{e}_q\cdot\mathbf{e}_p}{\lVert\mathbf{e}_q\rVert\,\lVert\mathbf{e}_p\rVert}.
+\end{equation}
+
+Lorsque les vecteurs sont normalisés, le produit scalaire et la similarité cosinus deviennent directement liés. Le service d'embeddings du projet normalise explicitement les vecteurs après encodage. Cette normalisation est cohérente avec une recherche basée sur la proximité angulaire et facilite la comparaison des scores.
+
+\subsection{Famille E5 et modèle multilingue}
+
+La famille E5 repose sur un préentraînement contrastif à partir de paires de textes faiblement supervisées \citep{Wang2022E5}. Son objectif est de fournir une représentation générique utilisable pour la recherche, la classification ou le regroupement. La variante multilingue a été entraînée à partir d'un volume important de paires couvrant plusieurs langues, puis affinée sur des jeux de données supervisés \citep{Wang2024MultilingualE5}.
+
+La stack active utilise \texttt{multilingual-e5-large}. Ce choix est justifié par la nature principalement francophone du corpus, qui contient néanmoins des termes anglais, des acronymes et des noms de produits. Le service \texttt{services/embeddings/main.py} applique les préfixes \texttt{query:} aux questions et \texttt{passage:} aux documents. Cette convention ne relève pas d'un détail cosmétique : elle correspond au format d'utilisation recommandé pour les modèles E5 et indique au modèle le rôle du texte encodé.
+
+Le modèle est chargé dans un microservice FastAPI dédié. Les textes sont encodés par lots, convertis en tableaux numériques et normalisés. L'isolation de cette fonction dans un service distinct évite de charger le modèle dans chaque composant de l'application et permet au backend de demander des embeddings par HTTP.
+
+\subsection{Granularité documentaire et découpage}
+
+Un document entier peut dépasser la taille acceptable pour un modèle d'embeddings ou pour le contexte du modèle génératif. Il est donc découpé en fragments, souvent appelés \textit{chunks}. Le choix de la granularité influence directement le système :
+
+\begin{itemize}
+    \item des fragments trop courts perdent le contexte nécessaire à l'interprétation ;
+    \item des fragments trop longs contiennent davantage de bruit et réduisent la précision de la récupération ;
+    \item un chevauchement entre fragments limite les ruptures d'information aux frontières ;
+    \item les titres, chemins, numéros de page et autres métadonnées aident à replacer le fragment dans son document d'origine.
+\end{itemize}
+
+Il n'existe pas de taille universellement optimale. Le découpage doit être adapté à la structure des fichiers, aux types de questions et aux limites du modèle. Pour ce projet, l'important est de conserver la provenance, les URL, les identifiants de fichiers et les informations d'autorisation avec chaque fragment. Ces métadonnées sont ensuite utilisées pour l'affichage des sources et pour le filtrage des accès.
