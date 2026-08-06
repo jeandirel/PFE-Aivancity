@@ -1,0 +1,53 @@
+\section{Démarche de conception et de développement}
+
+\begin{table}[H]
+\centering
+\caption{Phases de construction de l'artefact}
+\label{tab:phases_construction}
+\begin{tabular}{p{2.8cm}p{5.2cm}p{5.1cm}}
+\toprule
+\textbf{Phase} & \textbf{Objectif} & \textbf{Livrables ou preuves} \\
+\midrule
+Cadrage & Définir le problème, les acteurs, le périmètre et les contraintes. & Problématique, exigences initiales et sources cibles. \\
+Préparation documentaire & Extraire, découper et enrichir les contenus. & Connecteurs, mappings, métadonnées et collections. \\
+Pipeline RAG & Construire la recherche, le contexte et la génération. & Modules de classification, reranking et orchestration. \\
+Industrialisation & Séparer les responsabilités et stabiliser les dépendances. & Services UI, backend, embeddings, Qdrant, PostgreSQL et vLLM. \\
+Sécurité & Intégrer identité, principaux et filtrage documentaire. & Normalisation ACL, filtres Qdrant et audits Freshservice. \\
+Déploiement & Exécuter et superviser la solution sur la VM. & Docker Compose, Nginx, systemd, healthchecks et sauvegardes. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cadrage du besoin et du périmètre}
+
+La première phase consiste à formuler le problème d'accès aux connaissances internes et à identifier les acteurs, les sources, les contraintes et les résultats attendus. Le besoin fonctionnel central est de permettre une interrogation en langage naturel avec restitution des sources. Les exigences non fonctionnelles portent notamment sur la confidentialité, la traçabilité, la maintenabilité, la persistance et l'intégration à l'environnement existant.
+
+\subsection{Préparation et caractérisation des sources}
+
+Cette phase couvre l'identification des formats, l'extraction du texte, le nettoyage, le découpage et l'enrichissement par métadonnées. Les connecteurs SharePoint et Freshservice transforment des objets provenant de systèmes différents en éléments exploitables par le pipeline RAG.
+
+La préparation ne porte pas uniquement sur le contenu textuel. Les métadonnées de source, de chemin, d'URL, de collection et d'autorisation sont essentielles à la consultation des preuves et au contrôle d'accès. La qualité de l'index dépend donc autant de la fidélité du texte extrait que de la complétude des métadonnées. Cette approche rejoint les dimensions de qualité des données proposées par ISO/IEC 25012 \citep{ISO25012_2008}.
+
+\subsection{Prototypage du pipeline conversationnel}
+
+Le pipeline a été construit autour d'étapes séparables : qualification de la requête, réécriture éventuelle en fonction de l'historique, embedding, récupération, reranking, sélection des passages, construction du prompt et génération. Cette décomposition facilite l'observation et la correction des erreurs.
+
+Le code actuel comporte des règles destinées à distinguer les échanges simples des questions métier, à reconnaître certaines requêtes de définition ou de procédure, à mesurer l'alignement lexical et à traiter explicitement certaines impossibilités présentes dans les sources. Ces règles complètent la recherche sémantique sans être présentées comme un modèle appris.
+
+\subsection{Passage à une architecture de services}
+
+L'industrialisation a conduit à séparer l'interface, l'orchestration RAG, les embeddings, l'inférence, la base relationnelle et le stockage vectoriel. Cette séparation réduit le couplage et permet de contrôler indépendamment le démarrage, la santé et les ressources de chaque composant.
+
+Une évolution importante a été la migration de la recherche principale de FAISS vers Qdrant. Le service d'embeddings produit les vecteurs selon la convention E5, puis le backend interroge une ou plusieurs collections Qdrant. Les payloads portent les informations nécessaires à la source, au périmètre documentaire et aux ACL.
+
+\subsection{Intégration de la sécurité et de la persistance}
+
+Les principaux d'accès sont normalisés avant la construction du filtre Qdrant. Les résultats peuvent être filtrés en fonction des utilisateurs, groupes ou niveaux de visibilité associés aux documents. Ce mécanisme vise à empêcher qu'un passage non autorisé ne soit fourni au modèle génératif.
+
+PostgreSQL assure la persistance des interactions et des informations utiles au suivi. Les secrets, mots de passe et clés d'API sont fournis par l'environnement. Le démarrage de certains services est bloqué lorsque des valeurs faibles ou de substitution sont détectées.
+
+\subsection{Déploiement et exploitation}
+
+La solution est assemblée avec Docker Compose. Les services disposent de contrôles de santé et sont reliés par un réseau dédié. Nginx publie l'interface en HTTPS et une unité systemd permet de relever la stack au démarrage de la machine. Des scripts traitent également les sauvegardes et la rotation de certains journaux.
+
+Le déploiement est considéré comme une activité de validation : il permet d'observer les dépendances, les ports, la disponibilité du GPU, la persistance et le comportement des services dans un environnement proche de l'usage réel.
