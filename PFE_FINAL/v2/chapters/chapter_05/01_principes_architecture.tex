@@ -1,0 +1,28 @@
+
+\section{Introduction}
+
+L'architecture de l'Assistant RAG DNSI répond à une contrainte centrale : faire circuler une question depuis l'interface utilisateur jusqu'aux sources documentaires et au modèle de langage, tout en conservant la traçabilité, la séparation des responsabilités et le contrôle des accès. La solution ne repose donc pas sur un programme monolithique, mais sur plusieurs services spécialisés reliés par des contrats HTTP et des stockages persistants.
+
+La description présentée dans ce chapitre est reconstruite à partir de la configuration de production, du code du backend FastAPI, du service d'embeddings, du client vLLM, du gestionnaire Qdrant, de l'interface Streamlit et des connecteurs documentaires. Les fichiers actifs priment sur les documents d'architecture plus anciens lorsque leurs descriptions divergent.
+
+\section{Principes d'architecture}
+
+\begin{table}[H]
+\centering
+\caption{Principes structurants de l'architecture}
+\label{tab:principes_architecture_ch5}
+\begin{tabular}{p{3.8cm}p{9.3cm}}
+\toprule
+\textbf{Principe} & \textbf{Application dans la solution} \\
+\midrule
+Séparation des responsabilités & L’interface gère l’expérience utilisateur, FastAPI orchestre le traitement, le service E5 produit les vecteurs, Qdrant recherche les passages, vLLM sert le modèle et PostgreSQL persiste les interactions. \\
+Traçabilité documentaire & La réponse est associée aux passages et métadonnées utilisés. Les informations de source restent séparées du texte généré afin que l’interface puisse les présenter de façon contrôlée. \\
+Filtrage avant génération & Les principaux d’accès et les métadonnées ACL interviennent lors de la recherche. Le modèle ne doit recevoir que les extraits conservés après filtrage et sélection. \\
+Exécution contrôlée des modèles & Le modèle de langage et les embeddings sont montés depuis des chemins locaux et servis par des composants internes à la stack. \\
+Configuration externalisée & Les URL, modèles, collections, limites de concurrence et secrets sont fournis par l’environnement plutôt que codés dans les sources. \\
+Tolérance aux défaillances partielles & Les contrôles de santé, délais d’attente, nouvelles tentatives et mécanismes de contre-pression évitent qu’une indisponibilité locale bloque silencieusement l’ensemble du système. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Les principes retenus visent à limiter le couplage, à conserver les preuves documentaires et à placer le contrôle d'accès avant la génération. Les modèles et paramètres sont externalisés afin de permettre une évolution de la stack sans réécriture complète de l'interface.
