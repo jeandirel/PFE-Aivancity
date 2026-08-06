@@ -1,0 +1,228 @@
+%==============================================================================
+% CHAPITRE 1 - CONTEXTE, BESOIN METIER ET PROBLEMATIQUE
+% Version 2 fondee sur le depot applicatif PocChatbotM3-clean
+%==============================================================================
+
+\chapter{Contexte organisationnel, besoin métier et problématique}
+\label{chap:contexte_problematique}
+
+\section{Introduction}
+
+Les organisations produisent et conservent une quantité croissante de documents techniques, fonctionnels et opérationnels. Ces contenus sont indispensables au fonctionnement quotidien des équipes, mais leur disponibilité dans un système documentaire ne signifie pas qu'ils soient immédiatement accessibles ou facilement exploitables. Lorsqu'une information est répartie entre plusieurs documents, formulée avec un vocabulaire métier spécifique ou enfouie dans des procédures longues, la recherche manuelle devient lente et incertaine.
+
+Le projet présenté dans ce mémoire répond à cette difficulté dans un contexte d'entreprise. Il consiste à concevoir, développer et déployer un assistant conversationnel fondé sur une architecture de génération augmentée par récupération, ou Retrieval-Augmented Generation (RAG). La solution permet d'interroger en langage naturel des contenus provenant principalement de SharePoint et de Freshservice, puis de produire une réponse accompagnée des sources documentaires utilisées.
+
+Ce chapitre présente le contexte d'accueil du projet, le besoin métier, le périmètre réellement couvert par l'application et les contraintes ayant guidé sa conception. Il reformule également la problématique du mémoire à partir de l'implémentation réellement disponible dans le dépôt applicatif, sans reprendre les composants ou résultats non démontrés de la première version du document.
+
+\section{Contexte de l'organisation d'accueil}
+
+\subsection{Le groupe Astera et l'activité de CERP}
+
+Astera est un groupe coopératif au service des pharmaciens. Son modèle repose notamment sur des activités de répartition pharmaceutique, de services numériques, de formation et d'accompagnement des officines. CERP constitue l'une des principales sociétés du groupe et exerce une activité de grossiste-répartiteur au service des pharmacies de proximité.
+
+Le rapprochement des activités de CERP Rouen et de CERP Rhin Rhône Méditerranée a conduit, en juillet 2024, à la création de la société CERP. Le groupe présente cette entité comme un partenaire de référence des pharmaciens et met en avant un réseau de proximité ainsi que l'intégration de solutions technologiques destinées à fiabiliser ses services.
+
+Dans ce type d'organisation, la continuité des opérations dépend fortement du système d'information. Les applications métiers, les procédures de support, les guides d'exploitation et les documents de référence constituent une part importante du patrimoine informationnel. Leur accès rapide est particulièrement utile aux équipes techniques, fonctionnelles et de support.
+
+\subsection{La direction des systèmes d'information et l'équipe IA/Data}
+
+Le projet a été réalisé dans le cadre d'une alternance au sein de la direction en charge du numérique et des systèmes d'information, en interaction avec une équipe spécialisée en intelligence artificielle et en données. Le rôle de cette équipe est d'explorer, de prototyper puis d'industrialiser des usages de l'intelligence artificielle répondant à des besoins internes concrets.
+
+Le sujet du mémoire s'inscrit dans cette logique. Il ne s'agit pas de développer un assistant conversationnel généraliste, mais de fournir un accès contrôlé à des connaissances internes. L'application doit être capable de répondre à des questions portant sur des documents métier, d'indiquer les sources mobilisées et de fonctionner dans l'environnement technique de l'entreprise.
+
+\section{Origine du besoin métier}
+
+\subsection{Un patrimoine documentaire distribué}
+
+Les connaissances utiles aux collaborateurs sont réparties entre plusieurs systèmes. SharePoint contient des documents structurés en sites, bibliothèques et dossiers. Freshservice centralise, selon les usages, des informations liées au support, aux tickets, aux solutions et aux pratiques opérationnelles. À ces sources s'ajoutent des fichiers PDF, des documents bureautiques et des contenus issus de plusieurs périmètres métiers.
+
+Cette distribution crée plusieurs difficultés :
+
+\begin{itemize}
+    \item un collaborateur doit connaître l'emplacement du document ou les mots-clés exacts utilisés lors de sa rédaction ;
+    \item une même question peut nécessiter la consultation de plusieurs documents ;
+    \item les termes employés par les utilisateurs ne correspondent pas toujours aux titres ou formulations présentes dans les sources ;
+    \item les documents peuvent être mis à jour sans que les utilisateurs identifient immédiatement la version pertinente ;
+    \item certaines informations ne doivent être accessibles qu'à des utilisateurs ou groupes autorisés.
+\end{itemize}
+
+Le problème principal n'est donc pas seulement le stockage de l'information. Il concerne sa recherche, sa mise en contexte et sa restitution dans un format directement exploitable.
+
+\subsection{Limites d'une recherche documentaire classique}
+
+Une recherche documentaire traditionnelle retourne généralement une liste de fichiers ou de pages classés selon des correspondances lexicales. Cette approche reste pertinente pour localiser un document connu, mais elle est moins adaptée lorsqu'un utilisateur formule une question complète, emploie des synonymes ou attend une synthèse provenant de plusieurs extraits.
+
+L'utilisateur doit alors ouvrir plusieurs résultats, vérifier leur date, identifier les passages importants et reconstruire lui-même la réponse. Cette activité peut être répétitive, notamment pour les équipes confrontées à des questions récurrentes sur les applications, les procédures ou les incidents.
+
+Le besoin exprimé peut être résumé ainsi : permettre à un utilisateur de poser une question en langage naturel et d'obtenir une réponse fondée sur les contenus internes disponibles, tout en conservant la possibilité de contrôler les documents à l'origine de cette réponse.
+
+\section{Choix d'une architecture RAG}
+
+\subsection{Principe général}
+
+La génération augmentée par récupération associe deux mécanismes complémentaires. Le premier recherche dans une base documentaire les passages les plus proches de la question. Le second utilise un modèle de langage pour formuler une réponse à partir du contexte récupéré. Cette architecture combine ainsi une mémoire paramétrique, portée par le modèle de langage, et une mémoire documentaire externe pouvant être mise à jour indépendamment du modèle \citep{Lewis2020}.
+
+Dans le cadre du projet, cette approche répond à trois besoins essentiels :
+
+\begin{enumerate}
+    \item intégrer des connaissances internes absentes des données d'entraînement du modèle ;
+    \item fournir des sources permettant à l'utilisateur de vérifier la réponse ;
+    \item faire évoluer le corpus sans entraîner de nouveau modèle de langage.
+\end{enumerate}
+
+Le RAG ne supprime toutefois pas automatiquement les erreurs. La qualité de la réponse dépend du contenu indexé, du découpage documentaire, du modèle d'embeddings, de la stratégie de récupération, du filtrage des résultats et des instructions transmises au modèle génératif. Le mémoire adopte donc une posture d'ingénierie : l'objectif est de construire un système contrôlable et exploitable, et non d'affirmer qu'un modèle génératif fournit une vérité absolue.
+
+\subsection{Adaptation au français et aux contenus métiers}
+
+Le corpus et les requêtes sont principalement en français, avec la présence possible de termes anglais, d'acronymes et de références techniques. Le dépôt de production configure le modèle \texttt{multilingual-e5-large} pour la génération des embeddings. Ce choix est cohérent avec un cas d'usage multilingue : la famille Multilingual E5 a été entraînée sur des paires de textes couvrant de nombreuses langues et vise les tâches de recherche sémantique \citep{Wang2024MultilingualE5}.
+
+Le modèle d'embeddings transforme les questions et les passages documentaires en vecteurs. La proximité entre ces vecteurs permet de retrouver des contenus liés par leur sens, même lorsque les formulations ne sont pas strictement identiques.
+
+\section{Périmètre fonctionnel réellement développé}
+
+\subsection{Sources SharePoint et Freshservice}
+
+La solution dispose de connecteurs distincts pour SharePoint et Freshservice. Le pipeline SharePoint télécharge les fichiers autorisés, extrait leur contenu, prépare les métadonnées utiles et alimente la base vectorielle. Les métadonnées comprennent notamment les informations nécessaires à l'identification de la source et au filtrage par droits d'accès.
+
+Le dépôt contient également un ensemble de modules Freshservice dédiés à l'accès à l'API, à l'export, à la synchronisation, à la construction des mappings et à l'audit des droits. Freshservice ne constitue donc pas une simple perspective du projet : il fait partie du périmètre de connexion documentaire réellement présent dans l'implémentation.
+
+Le mémoire distinguera néanmoins la présence d'un connecteur dans le code, son niveau de test et son usage effectif en production. Cette distinction évite de présenter comme totalement industrialisé un composant qui aurait uniquement été développé ou validé sur un périmètre limité.
+
+\subsection{Interface conversationnelle et consultation des sources}
+
+L'interface utilisateur est développée avec Streamlit. Elle permet à l'utilisateur de saisir une question, de consulter la réponse et d'accéder aux sources retournées par le pipeline RAG. Le code actif prévoit également la gestion de l'historique de conversation, l'identification des utilisateurs, le feedback sur les réponses et une page de suivi des interactions.
+
+L'interface n'exécute pas directement toute la logique d'intelligence artificielle. Elle communique avec une API FastAPI qui centralise le traitement des requêtes, la recherche documentaire, la construction du contexte, l'appel au modèle de langage et la persistance des interactions. Cette séparation limite le couplage entre la présentation et les traitements métiers.
+
+\subsection{Recherche vectorielle et gestion des métadonnées}
+
+La base vectorielle active de la stack de production est Qdrant. Les documents indexés sont associés à des métadonnées, notamment leur source et les informations utilisées pour le contrôle d'accès. Qdrant est lancé comme un service dédié dans l'architecture Docker Compose, avec un volume persistant.
+
+Le dépôt contient encore des modules FAISS et plusieurs éléments hérités des versions antérieures. Ceux-ci sont conservés pour certains tests, scripts ou besoins de migration, mais ils ne doivent pas être confondus avec le moteur documentaire principal de la version active. Le mémoire présentera donc FAISS comme une étape historique ou un composant secondaire lorsque cela est démontré, et Qdrant comme le moteur vectoriel de la stack courante.
+
+\subsection{Modèle de langage et service d'inférence}
+
+La génération des réponses repose sur un modèle Mistral déployé localement. Le fichier de production configure \texttt{Mistral-Small-3.1-24B-Instruct-2503}, servi par vLLM sur une infrastructure équipée d'un GPU NVIDIA. vLLM expose une API compatible avec le format d'API d'OpenAI, ce qui permet au backend d'utiliser un client HTTP standard tout en conservant l'inférence dans l'environnement contrôlé de l'entreprise.
+
+Cette configuration remplace les descriptions antérieures faisant référence à Mistral 7B exécuté sur CPU avec \texttt{llama-cpp-python}. Ces éléments correspondent à une autre hypothèse ou à une génération antérieure du projet et ne décrivent pas la stack active observée dans le dépôt.
+
+\section{Architecture technique observée}
+
+\subsection{Services applicatifs}
+
+La stack active est organisée autour de plusieurs services conteneurisés :
+
+\begin{itemize}
+    \item une interface Streamlit ;
+    \item un backend FastAPI chargé de l'orchestration RAG ;
+    \item un microservice SentenceTransformers pour les embeddings ;
+    \item un serveur vLLM pour l'inférence du modèle Mistral ;
+    \item une base PostgreSQL pour les sessions et interactions ;
+    \item une base vectorielle Qdrant ;
+    \item un reverse proxy Nginx assurant la publication HTTPS de l'interface.
+\end{itemize}
+
+Les services communiquent sur un réseau Docker dédié. Des contrôles de santé sont définis pour l'interface, le backend, les embeddings, le modèle, PostgreSQL et Qdrant. Les données persistantes sont conservées dans des volumes ou répertoires montés depuis l'hôte.
+
+\subsection{Déploiement sur machine virtuelle}
+
+L'application est déployée sur une machine virtuelle Azure mise à disposition dans l'environnement de l'entreprise. Docker Compose décrit les dépendances entre les services et facilite leur redémarrage. Nginx publie l'interface en HTTPS et une unité systemd permet de relever automatiquement la stack au démarrage de la machine.
+
+Le déploiement tient compte de contraintes opérationnelles réelles : certificats TLS, persistance, gestion des secrets, disponibilité du GPU, contrôle des ports, compatibilité avec SELinux et coexistence avec d'anciennes briques d'infrastructure. Ces éléments montrent que le projet dépasse le stade d'un notebook ou d'une démonstration locale, sans pour autant justifier des affirmations de haute disponibilité ou de passage à l'échelle qui n'auraient pas été mesurées.
+
+\section{Contraintes de sécurité et de confidentialité}
+
+\subsection{Authentification}
+
+Le projet contient un module d'intégration avec l'authentification Microsoft. L'objectif est d'identifier l'utilisateur et de rattacher ses interactions à une session. Le mécanisme précis, ses autorisations et son niveau de déploiement seront détaillés dans le chapitre consacré à l'implémentation après vérification des flux OAuth configurés dans le code.
+
+\subsection{Contrôle d'accès documentaire}
+
+SharePoint organise les ressources dans des sites, bibliothèques, dossiers et fichiers, auxquels peuvent s'appliquer des droits directs ou hérités. Microsoft Graph expose les ressources SharePoint ainsi que des permissions déléguées ou applicatives. Dans un système RAG, la gestion de ces droits est déterminante : un passage provenant d'un document non autorisé ne doit pas être utilisé pour produire une réponse à un utilisateur qui ne peut pas consulter ce document.
+
+La stack active configure le filtrage ACL dans le backend et transporte les métadonnées d'autorisation lors de l'indexation. Le dépôt comporte également des outils d'audit pour les droits Freshservice. Le mémoire décrira ce mécanisme tel qu'il est réellement implémenté et testera séparément les cas où des métadonnées seraient absentes. La présence d'une option de type \texttt{fail open} dans la configuration impose notamment une analyse critique : elle facilite la compatibilité avec d'anciens contenus, mais doit être évaluée avec prudence dans un contexte sensible.
+
+\subsection{Protection des secrets et des données}
+
+Les fichiers de production imposent la définition de mots de passe et de clés d'API. Le démarrage de certains services est bloqué lorsque les valeurs restent vides ou correspondent à des valeurs faibles courantes. Les secrets ne doivent pas être inscrits dans le dépôt ni reproduits dans le mémoire.
+
+Le modèle de langage et le service d'embeddings sont exécutés localement sur la VM, ce qui évite d'envoyer le contenu des documents vers une API générative publique. Ce choix réduit l'exposition à un prestataire externe, mais ne suffit pas à lui seul à assurer la sécurité globale. La sécurité dépend également de l'authentification, du cloisonnement réseau, du contrôle d'accès, de la journalisation, des sauvegardes et de la gestion des vulnérabilités des images conteneurisées.
+
+\section{Objectifs du projet}
+
+L'objectif général est de concevoir et déployer un assistant documentaire conversationnel permettant d'accéder plus simplement à des connaissances internes tout en conservant la traçabilité des réponses.
+
+Cet objectif se décline en six objectifs opérationnels :
+
+\begin{enumerate}
+    \item connecter la solution à des sources documentaires existantes, en particulier SharePoint et Freshservice ;
+    \item extraire, préparer et indexer les contenus avec leurs métadonnées ;
+    \item retrouver les passages pertinents à partir d'une question en langage naturel ;
+    \item produire une réponse structurée avec un modèle de langage déployé dans l'environnement de l'entreprise ;
+    \item présenter les documents sources afin de permettre la vérification humaine ;
+    \item déployer l'ensemble sous forme de services conteneurisés exploitables sur une VM.
+\end{enumerate}
+
+Des objectifs complémentaires concernent l'authentification, les ACL, la persistance des interactions, le feedback et l'observabilité. Ils seront qualifiés dans les chapitres suivants selon leur niveau réel d'implémentation et de validation.
+
+\section{Problématique du mémoire}
+
+La première version du mémoire formulait une problématique centrée sur le Model Context Protocol et comparait un système nommé \textit{AntiGravity} à plusieurs architectures expérimentales. Or, le dépôt applicatif actif ne démontre ni l'usage de ce nom comme produit, ni la présence d'une architecture MCP au coeur de la stack, ni l'existence des résultats comparatifs annoncés. Cette formulation est donc abandonnée.
+
+La problématique retenue est la suivante :
+
+\begin{quote}
+\textbf{Comment concevoir, intégrer et déployer dans un environnement d'entreprise un assistant conversationnel RAG capable d'interroger des connaissances issues de SharePoint et de Freshservice, de restituer des réponses traçables et de prendre en compte les contraintes de sécurité, de persistance et d'exploitation ?}
+\end{quote}
+
+Cette question principale est précisée par quatre questions techniques :
+
+\begin{itemize}
+    \item Comment organiser l'ingestion et la mise à jour de sources documentaires hétérogènes ?
+    \item Comment construire une chaîne de recherche sémantique adaptée à des contenus majoritairement francophones ?
+    \item Comment intégrer les métadonnées et les droits d'accès dans le processus de récupération documentaire ?
+    \item Comment déployer et exploiter l'ensemble des composants nécessaires à l'inférence, à la recherche et à la persistance sur une infrastructure interne ?
+\end{itemize}
+
+\section{Contributions réelles du travail}
+
+À ce stade, les contributions démontrables par le dépôt sont principalement des contributions d'ingénierie :
+
+\begin{itemize}
+    \item une architecture applicative séparant l'interface, l'API, les embeddings, l'inférence et la persistance ;
+    \item des pipelines d'alimentation documentaire pour SharePoint et Freshservice ;
+    \item une indexation Qdrant enrichie de métadonnées et d'informations d'autorisation ;
+    \item un pipeline RAG intégrant classification, récupération, construction du contexte et génération ;
+    \item une interface conversationnelle avec sources, historique et feedback ;
+    \item un déploiement Docker Compose sur VM avec GPU, Nginx, contrôles de santé et sauvegardes.
+\end{itemize}
+
+Le mémoire n'attribuera pas au projet des résultats scientifiques ou statistiques sans données vérifiables. Les tests présents dans le dépôt, les scénarios E2E, les journaux et les mesures disponibles seront analysés dans le chapitre d'évaluation. Lorsqu'une métrique n'a pas été collectée, elle sera présentée comme un protocole recommandé et non comme un résultat obtenu.
+
+\section{Périmètre et limites}
+
+Le périmètre du mémoire couvre la conception, le développement, l'intégration et le déploiement de l'assistant RAG M3. Il couvre les connecteurs documentaires, le traitement des requêtes, la recherche vectorielle, l'inférence locale, l'interface et les principaux mécanismes d'exploitation.
+
+Les éléments suivants ne seront pas présentés comme acquis sans preuve supplémentaire :
+
+\begin{itemize}
+    \item une comparaison statistique complète avec plusieurs architectures concurrentes ;
+    \item une étude utilisateur fondée sur un échantillon formalisé ;
+    \item un taux d'hallucination chiffré ;
+    \item une garantie formelle d'absence de fuite documentaire ;
+    \item une haute disponibilité multi-noeuds ;
+    \item une intégration MCP en production ;
+    \item un déploiement Kubernetes faisant partie de la stack finale.
+\end{itemize}
+
+Ces sujets peuvent être étudiés comme limites ou perspectives. Cette séparation entre le réalisé et le futur constitue une exigence de fiabilité du mémoire.
+
+\section{Organisation de la suite du mémoire}
+
+Le chapitre suivant présente les fondements scientifiques et techniques nécessaires à la compréhension du projet : modèles de langage, embeddings, recherche sémantique, bases vectorielles, RAG, sécurité et évaluation. Les chapitres consacrés à la méthodologie et aux besoins décrivent ensuite la démarche de conception et les exigences retenues. L'architecture et l'implémentation détaillent les composants observés dans le dépôt. Enfin, les chapitres d'évaluation, de discussion et de conclusion analysent les éléments réellement testés, les limites et les perspectives d'évolution.
+
+\section{Conclusion}
+
+Le projet répond à un besoin concret d'accès aux connaissances internes. Sa valeur ne repose pas sur l'invention d'un nouveau modèle de langage, mais sur l'intégration cohérente de plusieurs composants : connecteurs documentaires, embeddings multilingues, base vectorielle, modèle génératif local, API, interface, persistance et mécanismes d'exploitation.
+
+La suite du mémoire adopte le dépôt applicatif comme source de vérité. Cette règle conduit à corriger plusieurs incohérences de la version initiale et à décrire uniquement les fonctionnalités démontrées. Elle permet de construire un document académique défendable, dans lequel les réalisations, les tests, les limites et les perspectives sont clairement distingués.
