@@ -35,6 +35,12 @@ Les chapitres volumineux peuvent être divisés en sous-fichiers LaTeX afin de f
   - phases de cadrage, préparation documentaire, prototypage, industrialisation, sécurité et déploiement ;
   - critères ISO/IEC 25010, stratégie de validation et tests disponibles ;
   - reproductibilité, gestion des risques et menaces à la validité.
+- Chapitre 4 — Analyse des besoins et spécifications : **terminé**.
+  - périmètre, parties prenantes et dix cas d'usage principaux ;
+  - quinze exigences fonctionnelles et exigences relatives aux données ;
+  - quatorze exigences non fonctionnelles assorties de critères de vérification ;
+  - contrats d'interface entre Streamlit, FastAPI, embeddings, Qdrant, vLLM et PostgreSQL ;
+  - critères d'acceptation et matrice de traçabilité vers le code et les tests.
 
 ## Éléments explicitement exclus sans nouvelle preuve
 
