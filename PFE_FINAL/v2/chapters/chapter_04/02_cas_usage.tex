@@ -1,0 +1,43 @@
+\section{Cas d'usage}
+
+Les cas d'usage ont été reconstruits à partir des parcours et contrats réellement présents dans l'application. Ils ne décrivent pas seulement l'interface : ils couvrent également les traitements documentaires et les opérations d'exploitation.
+
+\begin{table}[H]
+\centering
+\caption{Cas d'usage principaux}
+\label{tab:usecases_ch4}
+\begin{tabular}{p{1.2cm}p{3.6cm}p{2.8cm}p{6.2cm}}
+\toprule
+\textbf{ID} & \textbf{Cas d'usage} & \textbf{Acteur} & \textbf{Résultat attendu} \\
+\midrule
+UC01 & S'authentifier & Collaborateur & Établir une identité Microsoft, récupérer les claims utiles et initialiser une session applicative. \\
+UC02 & Ouvrir ou retrouver une session & Collaborateur & Créer ou réutiliser un identifiant de session et récupérer les conversations persistées. \\
+UC03 & Sélectionner un périmètre documentaire & Collaborateur & Interroger une collection logique telle que DNSI, Freshservice ou un périmètre agrégé lorsque la configuration le permet. \\
+UC04 & Poser une question métier & Collaborateur & Envoyer la question, l'historique et les principaux d'accès au backend FastAPI. \\
+UC05 & Obtenir une réponse fondée sur les documents & Collaborateur & Classer la requête, rechercher les passages, appliquer les ACL, construire le contexte et appeler le modèle. \\
+UC06 & Consulter les sources & Collaborateur & Afficher les métadonnées des documents et, lorsque le chemin est disponible, ouvrir le PDF associé. \\
+UC07 & Poursuivre une conversation & Collaborateur & Utiliser l'historique pour reformuler une question anaphorique ou contextualiser une demande de suivi. \\
+UC08 & Signaler la qualité d'une réponse & Collaborateur & Associer un avis, une valeur et un commentaire à une interaction. \\
+UC09 & Superviser l'usage & Administrateur & Consulter les interactions, feedbacks et indicateurs disponibles dans la page de monitoring. \\
+UC10 & Synchroniser les sources & Exploitant & Exporter, transformer et indexer les contenus SharePoint ou Freshservice dans les collections Qdrant. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Scénario nominal d'une requête documentaire}
+
+\begin{enumerate}
+    \item l'utilisateur est authentifié et une session applicative est créée ou retrouvée ;
+    \item l'interface transmet au backend la question, l'historique, le périmètre documentaire et les principaux disponibles ;
+    \item le backend classe la requête et décide du recours au corpus ;
+    \item le service d'embeddings produit le vecteur de requête ;
+    \item Qdrant retourne les passages correspondant au périmètre et au filtre ACL ;
+    \item le backend reranke et sélectionne les extraits, puis construit le prompt ;
+    \item vLLM génère la réponse à partir du contexte ;
+    \item l'interaction et ses sources sont persistées dans PostgreSQL ;
+    \item l'interface affiche la réponse et les sources, puis peut enregistrer un feedback.
+\end{enumerate}
+
+\subsection{Scénarios alternatifs}
+
+Lorsque la question relève d'un échange conversationnel simple, le backend peut répondre sans interroger le corpus. Lorsqu'aucun passage suffisamment pertinent n'est disponible, le système produit un message d'abstention. En cas de surcharge, l'API renvoie un statut 429 accompagné d'une durée de nouvelle tentative. Lorsque des règles d'accès interdisent un contenu Freshservice, le backend peut produire une réponse spécifique d'accès refusé.
