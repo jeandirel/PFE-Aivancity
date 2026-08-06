@@ -1,0 +1,72 @@
+\section{Évaluation des systèmes RAG}
+
+\subsection{Séparer les composants évalués}
+
+L'évaluation d'un assistant RAG ne peut pas être réduite à une seule mesure. Une réponse insatisfaisante peut résulter d'un document absent, d'un mauvais découpage, d'une récupération incorrecte, d'une mauvaise interprétation ou d'un problème d'interface. Les travaux RAGAS proposent notamment de distinguer la pertinence du contexte, la fidélité au contexte et la pertinence de la réponse \citep{Es2024RAGAS}. ARES propose également une évaluation automatisée de la pertinence du contexte, de la fidélité et de la pertinence de la réponse, accompagnée d'un nombre limité d'annotations humaines \citep{SaadFalcon2024ARES}.
+
+Ces cadres sont utiles pour structurer un protocole, mais les juges automatiques peuvent eux-mêmes se tromper. Une évaluation crédible combine des métriques automatiques, des vérifications humaines et des tests techniques reproductibles.
+
+\begin{table}[H]
+\centering
+\caption{Dimensions d'évaluation applicables à l'Assistant RAG DNSI}
+\label{tab:evaluation_dimensions}
+\begin{tabular}{p{3.2cm}p{6cm}p{4.5cm}}
+\toprule
+\textbf{Dimension} & \textbf{Question évaluée} & \textbf{Exemples de preuves} \\
+\midrule
+Ingestion & Les documents attendus sont-ils extraits, découpés, indexés et mis à jour ? & États de synchronisation, comptages, tests de suppression et de mise à jour. \\
+Retrieval & Les fragments pertinents apparaissent-ils parmi les premiers résultats ? & Recall@$k$, précision@$k$, jugement de pertinence sur un jeu de questions. \\
+Génération & La réponse est-elle fidèle aux passages et répond-elle à la question ? & Exactitude factuelle, fidélité, citations, analyse humaine. \\
+Sécurité & Un utilisateur ne récupère-t-il que les documents autorisés ? & Tests positifs et négatifs par profils, cas d'ACL manquantes et héritées. \\
+Système & Le service fonctionne-t-il de manière stable sous la charge attendue ? & Latence par composant, erreurs, saturation GPU, disponibilité observée. \\
+Usage & La réponse et les sources sont-elles compréhensibles et utiles ? & Scénarios utilisateurs, feedbacks, entretiens ou questionnaire si réellement réalisés. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Absence de résultats inventés}
+
+L'ancien mémoire annonçait des taux d'hallucination, des latences, une enquête SUS, des comparaisons statistiques et des hypothèses testées sans fichiers de résultats correspondants. Ces valeurs ne sont pas reprises. Le chapitre d'évaluation ne contiendra que des mesures pouvant être reliées à un script, un log, un jeu de données, un export ou un protocole reproductible.
+
+Si certaines dimensions n'ont pas encore été mesurées, le mémoire présentera les tests fonctionnels disponibles, les observations vérifiables et un protocole futur. Cette approche est moins spectaculaire qu'un tableau rempli de chiffres, mais elle est scientifiquement et professionnellement défendable.
+
+\section{Positionnement de l'Assistant RAG DNSI}
+
+\begin{table}[H]
+\centering
+\caption{Correspondance entre l'état de l'art et la stack réellement observée}
+\label{tab:positionnement_stack}
+\begin{tabular}{p{3.5cm}p{5.2cm}p{5.2cm}}
+\toprule
+\textbf{Concept} & \textbf{Choix du projet} & \textbf{Précaution d'interprétation} \\
+\midrule
+Embeddings denses & \texttt{multilingual-e5-large}, préfixes query/passage, normalisation des vecteurs. & Aucun gain sur le corpus DNSI ne doit être affirmé sans benchmark local. \\
+Base vectorielle & Qdrant avec payloads, collections, URL et ACL. & FAISS reste présent dans des chemins historiques mais n'est pas le store actif principal. \\
+Retrieval & Recherche dense puis reranking lexical et heuristique. & Les règles métier doivent être testées et maintenues ; ce n'est pas un reranker neuronal appris. \\
+Génération & Mistral Small 3.1 24B servi localement par vLLM. & Les performances publiques du modèle ne sont pas des résultats du projet. \\
+Sources & Connecteurs SharePoint et Freshservice. & Distinguer code présent, tests disponibles et couverture effective de production. \\
+Sécurité & Principaux normalisés et filtre ACL Qdrant avant génération. & Le mode de repli sans métadonnées et les erreurs de synchronisation nécessitent des tests négatifs. \\
+Déploiement & Docker Compose, PostgreSQL, Nginx, healthchecks et VM GPU. & Ne pas confondre déploiement effectif et haute disponibilité multi-nœuds. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le système est ainsi positionné comme une application RAG d'entreprise modulaire, déployée sur une infrastructure interne et connectée à deux sources documentaires. Sa contribution principale est l'intégration cohérente des composants et l'adaptation aux contraintes de la DNSI. Le mémoire ne revendique ni un nouveau modèle de langage, ni un nouvel algorithme de recherche, ni une première étude académique sur MCP.
+
+Les éléments suivants sont explicitement exclus de la description de la version active, sauf preuve ajoutée ultérieurement :
+
+\begin{itemize}
+    \item le nom de produit \textit{AntiGravity} ;
+    \item une architecture MCP en production ;
+    \item Mistral 7B sur CPU comme modèle courant ;
+    \item \texttt{all-mpnet-base-v2} comme modèle d'embeddings actif ;
+    \item FAISS comme base vectorielle principale ;
+    \item une étude utilisateur ou des résultats statistiques non traçables ;
+    \item une garantie d'élimination des hallucinations ou des fuites de données.
+\end{itemize}
+
+\section{Conclusion}
+
+L'état de l'art met en évidence la complémentarité des composants mobilisés dans l'Assistant RAG DNSI. Les Transformers fournissent les modèles d'encodage et de génération. Les bi-encodeurs permettent de représenter les questions et les passages dans un espace sémantique. Le RAG associe cette recherche à un modèle génératif, tandis que Qdrant apporte la persistance, les payloads et le filtrage nécessaire aux collections documentaires. vLLM assure le service local du modèle Mistral, et les connecteurs adaptent le pipeline aux contraintes de SharePoint et Freshservice.
+
+La littérature montre également qu'aucun de ces composants ne garantit seul la fiabilité. La qualité dépend de la chaîne complète : collecte, découpage, embeddings, recherche, autorisations, contexte, génération, affichage des sources et évaluation. Le chapitre suivant présente la démarche méthodologique employée pour concevoir et valider cet artefact sans confondre les objectifs prévus avec les résultats effectivement obtenus.
