@@ -1,0 +1,78 @@
+\section{Critères de qualité retenus}
+
+Le modèle ISO/IEC 25010:2023 distingue neuf caractéristiques de qualité. Toutes ne sont pas évaluées avec la même profondeur. Les dimensions retenues sont celles qui correspondent directement au risque et au périmètre de l'Assistant RAG DNSI.
+
+\begin{table}[H]
+\centering
+\caption{Critères de qualité adaptés au projet}
+\label{tab:criteres_qualite}
+\begin{tabular}{p{3.1cm}p{5.1cm}p{5cm}}
+\toprule
+\textbf{Caractéristique} & \textbf{Application au projet} & \textbf{Moyens de validation} \\
+\midrule
+Adéquation fonctionnelle & Répondre à une question métier, fournir des sources, gérer l'historique. & Scénarios fonctionnels et tests E2E. \\
+Efficience & Maîtriser les temps d'embedding, de recherche et de génération. & Mesures par composant et tests de charge à archiver. \\
+Fiabilité & Détecter les services indisponibles et conserver les données utiles. & Healthchecks, redémarrage, tests d'erreur et sauvegardes. \\
+Sécurité & Limiter l'accès aux documents et protéger les secrets. & Tests ACL positifs et négatifs, revue de configuration. \\
+Compatibilité & Faire communiquer les services et connecteurs. & Contrats API, tests d'intégration et validation des formats. \\
+Maintenabilité & Séparer les composants, documenter et tester les règles. & Architecture modulaire, tests unitaires et configuration versionnée. \\
+Qualité d'interaction & Présenter une réponse compréhensible avec ses sources. & Scénarios utilisateurs et feedbacks réellement collectés. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Stratégie de validation}
+
+\subsection{Vérification statique de l'architecture}
+
+La première validation consiste à vérifier la cohérence entre les imports, les variables d'environnement, les services Docker, les volumes, les dépendances et les points d'entrée. Elle permet de confirmer qu'un composant mentionné appartient réellement au chemin actif.
+
+Cette approche est particulièrement importante lorsque la documentation conserve des références à une génération précédente. Un guide E2E peut rester utile comme scénario tout en contenant des noms devenus obsolètes. Dans ce cas, le scénario est conservé, mais les composants exacts sont revalidés contre le code et la configuration active.
+
+\subsection{Tests unitaires disponibles}
+
+Le backend contient des tests Pytest couvrant le nettoyage du contexte et des réponses, la détection du small talk, la classification du style de réponse, la normalisation lexicale, le calcul de scores, la réécriture de requêtes et le traitement de certaines impossibilités explicites.
+
+Des tests portent également sur la classification des requêtes métier. Ils vérifient notamment la reconnaissance de codes de transactions, de termes liés au domaine et de requêtes de définition ou de procédure.
+
+Le dépôt contient enfin des tests d'un store FAISS historique. Ils démontrent le fonctionnement de ce composant legacy, notamment l'ajout, la recherche et la persistance, mais ils ne suffisent pas à valider le store Qdrant actif. L'absence d'une couverture unitaire équivalente pour certains chemins Qdrant constitue une limite et un axe d'amélioration.
+
+\subsection{Validation d'intégration et bout en bout}
+
+Un scénario E2E relie l'interface Streamlit, le backend FastAPI, PostgreSQL, le service d'embeddings et le serveur d'inférence. Il prévoit la vérification des endpoints de santé, l'envoi d'une question métier, le retour des sources et l'enregistrement de l'interaction.
+
+Pour la version active, ce scénario doit inclure Qdrant et vérifier le filtrage des collections. La réussite d'un test E2E atteste que la chaîne communique correctement ; elle ne mesure pas à elle seule la pertinence documentaire ni la fidélité des réponses.
+
+\subsection{Validation du contrôle d'accès}
+
+La validation des ACL repose sur des cas positifs et négatifs. Un principal autorisé doit retrouver le document attendu. Un principal non autorisé ne doit pas recevoir le passage ni une réponse construite à partir de celui-ci. Les cas de métadonnées absentes, de droits hérités, de groupes Freshservice et de documents publics doivent être testés séparément.
+
+Une attention particulière est portée aux stratégies de repli lorsque les métadonnées sont incomplètes. Dans un contexte sensible, un comportement permissif peut augmenter le risque de divulgation. La décision doit donc être documentée, limitée et testée.
+
+\subsection{Évaluation documentaire et générative}
+
+L'évaluation d'un RAG doit séparer la récupération de la génération. Pour la récupération, un jeu de questions annotées peut servir à calculer Recall@$k$, Precision@$k$, MRR ou nDCG. Pour la génération, l'analyse porte sur la fidélité aux passages, la pertinence de la réponse, l'exactitude factuelle et la présence de sources.
+
+Le dépôt contient des scripts de benchmark pour l'extraction, le chunking, les embeddings et la construction d'un index historique. Ces scripts définissent une base reproductible, mais aucun dossier de résultats n'est présent dans la version auditée. Ils sont donc traités comme des instruments de mesure disponibles et non comme la preuve de performances chiffrées.
+
+Toute mesure publiée devra être accompagnée du jeu de données, de la configuration, de la commande d'exécution et du fichier de résultats. À défaut, la validation reste fonctionnelle et qualitative.
+
+\begin{table}[H]
+\centering
+\caption{État des preuves de validation}
+\label{tab:preuves_validation}
+\begin{tabular}{p{3.3cm}p{5.8cm}p{4.2cm}}
+\toprule
+\textbf{Objet} & \textbf{Preuve disponible} & \textbf{Statut méthodologique} \\
+\midrule
+Classification et requêtes & Tests Pytest sur small talk, termes métier, définitions et procédures. & Validation unitaire partielle. \\
+Pipeline RAG & Tests sur nettoyage, réécriture, scores lexicaux et réponses contraintes. & Validation unitaire partielle. \\
+Store Qdrant actif & Implémentation et configuration actives. & Tests unitaires dédiés à renforcer. \\
+Store FAISS historique & Tests d'ajout, recherche, persistance et rechargement. & Preuve limitée au composant legacy. \\
+Chaîne applicative & Guide E2E et endpoints de santé. & Scénario à exécuter sur la stack courante. \\
+ACL & Code de normalisation, filtre Qdrant et audit Freshservice. & Tests positifs et négatifs requis. \\
+Performances & Scripts de benchmark sans résultats commités. & Protocole disponible ; résultat non établi. \\
+Utilisabilité & Mécanisme de feedback dans l'application. & Étude formelle uniquement si un export traçable existe. \\
+\bottomrule
+\end{tabular}
+\end{table}

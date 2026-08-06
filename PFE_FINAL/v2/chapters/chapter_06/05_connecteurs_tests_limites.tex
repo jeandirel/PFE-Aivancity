@@ -1,0 +1,51 @@
+\section{Pipelines documentaires}
+\begin{table}[H]
+\centering
+\caption{Implémentation des connecteurs}
+\label{tab:connectors_impl_ch6}
+\begin{tabular}{p{3.5cm}p{9.7cm}}
+\toprule
+\textbf{Périmètre} & \textbf{Implémentation} \\
+\midrule
+SharePoint & Le dossier est explicitement hors du flux principal. Les scripts exportent les documents, construisent les mappings, puis lancent une indexation complète ou incrémentale vers Qdrant. \\
+Freshservice & freshservice\_sync.py lit un état de synchronisation, extrait les articles modifiés, découpe les documents, encode les chunks, supprime les anciens points concernés puis effectue les upserts. \\
+Identifiants stables & Les points Freshservice utilisent des identifiants stables dérivés du document et de l’index du chunk. \\
+Collections séparées & Freshservice utilise par défaut rag\_text\_freshservice afin de ne pas mélanger ses contenus avec les autres sources. \\
+Dry run & Le script Freshservice propose un mode --dry-run et une réindexation complète avec --full. \\
+Déclenchement & Ces pipelines sont exécutés manuellement, par script ou planification ; ils ne sont pas démarrés par le Compose standard. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le connecteur SharePoint est explicitement hors du flux principal. Freshservice propose une synchronisation incrémentale fondée sur un état, des identifiants stables, la suppression des anciens points et l'upsert par lots.
+
+\section{Tests}
+\begin{table}[H]
+\centering
+\caption{Tests présents dans le dépôt}
+\label{tab:tests_impl_ch6}
+\begin{tabular}{p{4.0cm}p{9.2cm}}
+\toprule
+\textbf{Élément} & \textbf{Couverture observée} \\
+\midrule
+test\_query\_classifier.py & Small talk, termes métier, codes transaction, définitions et intentions de procédure. \\
+test\_rag\_pipeline.py & Nettoyage, réécriture, styles de réponse, scoring lexical, reranking et réponses contraintes. \\
+test\_vector\_store.py & Ajout, recherche et persistance du store vectoriel historique. \\
+Connecteurs & Des dossiers de tests existent pour SharePoint et Freshservice, mais leur couverture doit être évaluée séparément. \\
+À renforcer & Tests unitaires Qdrant, tests ACL positifs/négatifs, parcours SSO et scénario E2E complet de la stack active. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Limites}
+\begin{itemize}
+\item Le classifieur de requêtes est heuristique. Il est lisible et testable, mais sa couverture dépend de la liste de termes et de motifs maintenue dans le code.
+\item Le fallback local des embeddings améliore la continuité de service, mais il peut masquer une indisponibilité du microservice et doit être visible dans les métadonnées ou les logs.
+\item Le comportement fail-open en absence de métadonnées ACL est configurable. Dans un corpus sensible, une politique fail-closed est plus prudente.
+\item Le store Qdrant actif ne dispose pas, dans le dossier de tests principal, d’une couverture aussi explicite que le store historique.
+\item Les connecteurs sont des outils externes au runtime ; la fraîcheur du corpus dépend donc de leur planification, de leur état et de la surveillance des synchronisations.
+\item La page de monitoring et les métadonnées fournissent une base d’exploitation, mais ne remplacent pas une plateforme complète de métriques, de traces et d’alertes.
+\end{itemize}
+
+\section{Conclusion}
+L'implémentation repose sur une séparation nette entre interface, orchestration, embeddings, recherche, génération et persistance. Les choix structurants sont le SSO avec PKCE et validation JWT, le double filtrage ACL, l'encodage E5 séparé, la recherche Qdrant, l'inférence vLLM, la contre-pression et la traçabilité détaillée dans PostgreSQL.

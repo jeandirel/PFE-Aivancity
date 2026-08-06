@@ -1,0 +1,64 @@
+\section{Introduction}
+Le présent chapitre décrit la traduction concrète de l'architecture dans le dépôt applicatif. Les composants actifs se trouvent principalement dans \texttt{services/ui}, \texttt{services/backend/app} et \texttt{services/embeddings}. Les connecteurs SharePoint et Freshservice fournissent des pipelines documentaires externes au démarrage standard.
+
+\section{Organisation de l'implémentation}
+\begin{table}[H]
+\centering
+\caption{Organisation du dépôt actif}
+\label{tab:repo_ch6}
+\begin{tabular}{p{4.1cm}p{9.0cm}}
+\toprule
+\textbf{Emplacement} & \textbf{Responsabilité} \\
+\midrule
+services/ui & Interface Streamlit, SSO Microsoft, historique, visualisation des sources, feedback et monitoring. \\
+services/backend/app & API FastAPI, orchestration RAG, sécurité ACL, clients embeddings/vLLM et persistance. \\
+services/embeddings & Microservice FastAPI chargeant multilingual-e5-large et exposant /health et /embed. \\
+connectors\_sharepoint & Outillage externe d’export, mapping, synchronisation et indexation SharePoint vers Qdrant. \\
+connectors\_freshservice & Client API, export, mapping, synchronisation incrémentale et gestion des agents Freshservice. \\
+services/backend/tests & Tests Pytest du classifieur, du pipeline RAG et d’un store vectoriel historique. \\
+docker-compose.prod.yml & Assemblage et configuration des services de production. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Interface Streamlit et SSO}
+L'interface délègue la logique métier au backend par HTTP. Le module \texttt{sso.py} implémente un flux de code d'autorisation avec PKCE S256, state, nonce, échange du code et vérification du JWT avec les clés JWKS Microsoft \citep{MicrosoftOAuth2026}.
+
+\begin{table}[H]
+\centering
+\caption{Modules de l’interface}
+\label{tab:ui_ch6}
+\begin{tabular}{p{2.7cm}p{3.2cm}p{7.2cm}}
+\toprule
+\textbf{Fonction} & \textbf{Fichier} & \textbf{Mécanisme observé} \\
+\midrule
+Authentification & sso.py & Flux OAuth 2.0 avec code d’autorisation, PKCE S256, state, nonce, échange du code et vérification du JWT avec les clés JWKS. \\
+Chat & MistralChat.py & Saisie de la question, affichage de la réponse, sources, historique et gestion des notifications de surcharge. \\
+Client backend & utils/api\_clients.py & Appels HTTP vers /health, /auth/user-session, /chat, /interactions et /feedback avec X-API-Key. \\
+Historique & conversation\_history.py et session\_manager.py & Gestion des conversations côté interface et calcul d’un titre de session. \\
+Documents & pdf\_utils.py & Résolution des chemins PDF, conversion en base64 et visualisation intégrée. \\
+Monitoring & pages/02\_\_Monitoring.py & Consultation des interactions et feedbacks selon les droits d’administration disponibles. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Backend FastAPI}
+Les ressources globales sont initialisées une fois. Le gestionnaire \texttt{lifespan} valide la configuration, initialise la base et ferme les clients HTTP au shutdown, conformément au mécanisme recommandé par FastAPI \citep{FastAPILifespan2026}.
+
+\begin{table}[H]
+\centering
+\caption{Routes principales du backend}
+\label{tab:routes_ch6}
+\begin{tabular}{p{4.3cm}p{8.8cm}}
+\toprule
+\textbf{Route} & \textbf{Rôle} \\
+\midrule
+GET /health & État du backend, de Qdrant, des collections et des mécanismes ACL. \\
+POST /auth/user-session & Création ou récupération d’une session persistante associée au nom d’utilisateur. \\
+POST /chat & Orchestration complète du traitement conversationnel et documentaire. \\
+GET /interactions/{id} & Récupération des conversations d’une session utilisateur. \\
+GET /interactions & Lecture administrative paginée, protégée par la clé d’administration lorsqu’elle est configurée. \\
+POST /feedback & Mise à jour du feedback d’une interaction, avec contrôle optionnel de la session propriétaire. \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,36 @@
+
+\section{Choix et compromis architecturaux}
+
+\begin{table}[H]
+\centering
+\caption{Compromis architecturaux}
+\label{tab:tradeoffs_ch5}
+\begin{tabular}{p{3.5cm}p{5.0cm}p{4.8cm}}
+\toprule
+\textbf{Choix} & \textbf{Avantage} & \textbf{Contrepartie} \\
+\midrule
+Architecture en microservices légers & Isolation des ressources et contrats explicites. & Plus de configuration réseau et de supervision qu’un monolithe. \\
+Embeddings séparés du backend & Un seul modèle chargé et réutilisable ; backend plus léger. & Dépendance HTTP supplémentaire et besoin d’un healthcheck. \\
+vLLM centralisé & Mutualisation du GPU et API compatible OpenAI. & Démarrage long, dépendance GPU et gestion de capacité nécessaire. \\
+Qdrant & Persistance, payloads, collections et filtres ACL. & Exige une gouvernance des schémas de payload et des index. \\
+PostgreSQL & Persistance robuste des interactions et feedbacks. & Ajoute un service et des contraintes de sauvegarde. \\
+Docker Compose & Déploiement reproductible sur une VM unique. & Ne fournit pas à lui seul une haute disponibilité multi-nœuds. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Limites architecturales}
+
+\begin{itemize}
+\item La topologie décrite est une architecture sur VM et Docker Compose. Elle ne constitue pas une architecture distribuée multi-zone.
+\item Les ports loopback de vLLM et Qdrant limitent leur exposition directe, mais la sécurité dépend également du pare-feu, des permissions du système et de la gestion des secrets.
+\item La configuration active autorise un comportement de type fail-open lorsque des métadonnées ACL manquent. Ce réglage doit être revu selon la sensibilité des documents et couvert par des tests négatifs.
+\item Les contrôles de santé confirment la disponibilité technique d’un service, mais pas la qualité des réponses ni la fraîcheur du corpus.
+\item La documentation du dépôt contient plusieurs générations d’architecture. Le présent chapitre retient la configuration de production et le code actif comme référence.
+\end{itemize}
+
+\section{Conclusion}
+
+L'Assistant RAG DNSI adopte une architecture de services où Streamlit, FastAPI, multilingual-e5-large, Qdrant, vLLM, PostgreSQL et Nginx disposent de responsabilités distinctes. Les pipelines SharePoint et Freshservice alimentent les collections en dehors du chemin conversationnel, tandis que le backend orchestre la recherche, le filtrage, la génération et la persistance.
+
+La valeur de cette architecture réside dans l'ordre des contrôles : identité, principaux, filtre documentaire, sélection du contexte, génération et traçabilité. Le chapitre suivant détaillera l'implémentation des modules.

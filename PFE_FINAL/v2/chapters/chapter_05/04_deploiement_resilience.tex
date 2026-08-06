@@ -1,0 +1,56 @@
+
+\section{Architecture de sécurité}
+
+\begin{table}[H]
+\centering
+\caption{Contrôles de sécurité par couche}
+\label{tab:security_ch5}
+\begin{tabular}{p{3.3cm}p{10.0cm}}
+\toprule
+\textbf{Couche} & \textbf{Mécanisme observé} \\
+\midrule
+Canal utilisateur & Nginx publie l’application en HTTPS lorsque le profil proxy est actif. \\
+Identité & Le module SSO Microsoft gère le flux OAuth et place les claims utiles dans la session Streamlit. \\
+Interface vers backend & Les routes protégées exigent une clé X-API-Key. Une clé distincte peut être utilisée pour les opérations d’administration. \\
+Backend vers vLLM & Le client ajoute un jeton Bearer construit à partir de VLLM\_API\_KEY. \\
+Recherche documentaire & Le backend normalise les principaux, résout si nécessaire des appartenances supplémentaires et construit un filtre Qdrant. \\
+Freshservice & Un résolveur spécifique distingue les agents autorisés et peut produire un refus explicite lorsqu’un contenu réservé est détecté. \\
+Secrets & Les mots de passe et clés sont injectés par l’environnement ; PostgreSQL refuse certaines valeurs faibles ou de substitution. \\
+Données & Les modèles sont locaux et les volumes persistants sont montés avec des droits adaptés. Les documents d’entrée sont montés en lecture seule dans l’interface. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le contrôle d'accès repose sur une défense en profondeur. Les principaux sont transportés vers le backend, normalisés et utilisés pour construire les filtres de recherche. Le filtrage intervient avant l'assemblage du contexte, mais la qualité de cette protection dépend de la complétude des métadonnées et du comportement configuré en cas d'ACL manquante.
+
+\section{Déploiement Docker Compose}
+
+Le fichier \texttt{docker-compose.prod.yml} assemble Nginx, l'interface, le backend, les embeddings, vLLM, PostgreSQL et Qdrant. Les dépendances utilisent \texttt{condition: service\_healthy}. La documentation Docker indique que Compose attend la réussite du healthcheck pour les dépendances déclarées avec cette condition \citep{DockerComposeDocs2026}.
+
+Les modèles et certificats sont montés en lecture seule. PostgreSQL utilise un volume nommé, Qdrant un répertoire persistant et les données d'exécution un répertoire partagé. La politique \texttt{restart: unless-stopped} est appliquée.
+
+\section{Résilience et maîtrise de la charge}
+
+\begin{table}[H]
+\centering
+\caption{Mécanismes de résilience}
+\label{tab:resilience_ch5}
+\begin{tabular}{p{3.5cm}p{9.8cm}}
+\toprule
+\textbf{Mécanisme} & \textbf{Comportement} \\
+\midrule
+Ordre de démarrage & Le backend attend PostgreSQL, les embeddings, vLLM et Qdrant en état healthy ; l’interface attend le backend. \\
+Contrôles de santé & Chaque service critique dispose d’une commande ou d’un endpoint de santé utilisé par Docker Compose. \\
+Limitation globale & Un compteur en mémoire rejette immédiatement les requêtes au-delà de MAX\_CONCURRENT\_REQUESTS avec un statut 429. \\
+Sémaphores & Des sémaphores distincts limitent les appels concurrents vers le LLM et les embeddings. \\
+Délais d’attente & Les clients HTTP définissent des timeouts de connexion et de traitement ; l’interface distingue timeout, surcharge et erreur applicative. \\
+Nouvelles tentatives & Le client vLLM réessaie certains échecs 5xx ou 429 avec attente exponentielle et jitter. \\
+Fenêtre de contexte & Lorsque vLLM refuse un budget de sortie incompatible avec la fenêtre disponible, le client réduit max\_tokens et rejoue l’appel. \\
+Redémarrage & La politique unless-stopped permet de relever les conteneurs après un arrêt non volontaire. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Observabilité et exploitation}
+
+Le backend expose \texttt{/health} avec l'état de Qdrant, les collections disponibles et le statut des mécanismes ACL. Les autres services possèdent également des healthchecks. L'interface comprend une page de monitoring dédiée aux interactions et feedbacks.

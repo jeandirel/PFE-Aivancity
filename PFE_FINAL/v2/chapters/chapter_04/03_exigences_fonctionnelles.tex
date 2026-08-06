@@ -1,0 +1,51 @@
+\section{Exigences fonctionnelles}
+
+Les exigences fonctionnelles décrivent les comportements attendus. La priorité \textit{Essentielle} correspond aux capacités nécessaires au service principal ; la priorité \textit{Importante} correspond aux fonctions de consultation, de suivi ou de robustesse qui complètent le parcours.
+
+\begin{table}[H]
+\centering
+\caption{Exigences fonctionnelles}
+\label{tab:functional_ch4}
+\begin{tabular}{p{1.2cm}p{2cm}p{7.1cm}p{3.4cm}}
+\toprule
+\textbf{ID} & \textbf{Priorité} & \textbf{Exigence} & \textbf{Preuve principale} \\
+\midrule
+FR01 & Essentielle & L'application doit permettre l'authentification d'un utilisateur via le flux Microsoft configuré. & services/ui/sso.py \\
+FR02 & Essentielle & L'interface doit créer ou retrouver une session utilisateur persistante. & POST /auth/user-session ; table user\_sessions \\
+FR03 & Essentielle & L'utilisateur doit pouvoir saisir une question en langage naturel et recevoir une réponse. & MistralChat.py ; POST /chat \\
+FR04 & Essentielle & Le backend doit décider si la requête nécessite le corpus documentaire ou une réponse directe. & QueryClassifier ; rag\_pipeline \\
+FR05 & Essentielle & Pour une requête RAG, le système doit générer un embedding et rechercher les passages dans Qdrant. & EmbeddingsClient ; VectorStoreManager \\
+FR06 & Essentielle & La recherche doit pouvoir être limitée à un périmètre documentaire configuré. & collection\_scope ; aliases Qdrant \\
+FR07 & Essentielle & Le système doit appliquer les règles d'accès avant d'utiliser un passage dans le contexte génératif. & security\_acl.py ; filtre Qdrant \\
+FR08 & Essentielle & La réponse documentaire doit être fondée sur les extraits récupérés et signaler l'absence d'information lorsqu'elle n'est pas établie. & prompts RAG stricts ; réponse de non-résultat \\
+FR09 & Importante & L'interface doit afficher les sources lorsque cette option est activée. & SHOW\_SOURCES ; SourceOut \\
+FR10 & Importante & L'interface doit permettre la consultation d'un PDF local lorsqu'un chemin exploitable est associé à la source. & pdf\_utils ; viewer intégré \\
+FR11 & Importante & Le système doit conserver les interactions et les regrouper par conversation. & table interactions ; GET /interactions \\
+FR12 & Importante & L'utilisateur doit pouvoir transmettre un feedback sur une interaction. & POST /feedback ; champs feedback\_* \\
+FR13 & Importante & Le système doit gérer les erreurs de timeout, de surcharge et d'indisponibilité sans bloquer durablement l'interface. & exceptions UI ; codes 429/503 ; Retry-After \\
+FR14 & Importante & L'exploitant doit disposer d'une page de suivi des interactions et feedbacks. & pages/02\_\_Monitoring.py \\
+FR15 & Essentielle & Les pipelines documentaires doivent pouvoir exporter, mapper, synchroniser et indexer les contenus SharePoint et Freshservice. & connectors\_sharepoint ; connectors\_freshservice \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Exigences relatives aux données}
+
+\begin{table}[H]
+\centering
+\caption{Exigences de données}
+\label{tab:datareq_ch4}
+\begin{tabular}{p{1.2cm}p{3cm}p{9.5cm}}
+\toprule
+\textbf{ID} & \textbf{Objet} & \textbf{Contenu requis} \\
+\midrule
+DR01 & Chunk documentaire & Texte, identifiant documentaire, chemin ou source, informations de page, type de contexte et URL éventuelle. \\
+DR02 & Métadonnées d'accès & Principaux de lecture, caractère public, source des ACL, héritage, groupes ou visibilité Freshservice. \\
+DR03 & Session utilisateur & Identifiant UUID, nom d'utilisateur et date de création. \\
+DR04 & Interaction & Session, conversation, requête, réponse, sources, métadonnées, timestamp et feedback. \\
+DR05 & Configuration & URLs des services, noms de collections, modèles, paramètres de RAG, limites de concurrence et secrets fournis par l'environnement. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La qualité des métadonnées est déterminante pour la traçabilité et la sécurité. Un chunk textuellement correct mais dépourvu de source ou d'ACL peut produire une réponse difficile à vérifier ou un risque d'accès inapproprié. Les exigences de données sont donc traitées comme des exigences fonctionnelles de premier ordre.

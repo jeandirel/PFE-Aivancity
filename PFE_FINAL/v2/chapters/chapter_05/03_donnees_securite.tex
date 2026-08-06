@@ -1,0 +1,55 @@
+
+\section{Pipeline documentaire hors ligne}
+
+L'architecture distingue le chemin conversationnel en ligne et le chemin d'ingestion. Cette séparation évite de télécharger et transformer les documents pendant une conversation.
+
+\begin{table}[H]
+\centering
+\caption{Pipeline d'alimentation des collections}
+\label{tab:ingestion_ch5}
+\begin{tabular}{p{3.2cm}p{10.0cm}}
+\toprule
+\textbf{Étape ou source} & \textbf{Traitement architectural} \\
+\midrule
+SharePoint & Le pipeline exporte les fichiers, reconstruit le mapping entre les chemins locaux et les objets SharePoint, conserve les URL et prépare les métadonnées nécessaires à l’indexation. \\
+Freshservice & Les modules dédiés accèdent à l’API, exportent les contenus, construisent les mappings, synchronisent les documents et gèrent les informations liées aux agents et à la visibilité. \\
+Transformation & Les contenus sont extraits, nettoyés et divisés en passages. Chaque passage reçoit un identifiant, une source, un périmètre documentaire et, lorsque disponible, des métadonnées d’autorisation. \\
+Vectorisation & Le service ou les scripts d’indexation utilisent multilingual-e5-large avec le préfixe « passage: » et une normalisation des vecteurs. \\
+Chargement & Les vecteurs et payloads sont insérés ou mis à jour dans les collections Qdrant. La synchronisation doit également traiter les modifications et suppressions selon les capacités du pipeline exécuté. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Architecture de la recherche vectorielle}
+
+Le service d'embeddings charge \texttt{multilingual-e5-large} au démarrage. Il expose \texttt{/embed}, préfixe les textes par \texttt{query:} ou \texttt{passage:}, calcule les vecteurs par lots et applique une normalisation L2 lorsque la configuration l'active.
+
+Le backend transmet le vecteur au \texttt{VectorStoreManager}. Celui-ci résout les alias de collections, applique le filtre ACL, récupère les payloads et harmonise les résultats. Qdrant stocke chaque passage sous forme de point associant un vecteur et un payload. La documentation officielle distingue précisément collections, points, vecteurs et payloads filtrables \citep{QdrantDocs2026}.
+
+\section{Architecture de génération}
+
+Le service \texttt{llm} utilise l'image \texttt{vllm/vllm-openai} et sert \texttt{Mistral-Small-3.1-24B-Instruct-2503}. Le backend appelle l'API compatible OpenAI de vLLM sur \texttt{/v1/chat/completions}. vLLM documente officiellement ce mode de service HTTP pour les API de chat et de complétion \citep{VLLMDocs2026}.
+
+Le client définit un timeout, ajoute l'autorisation Bearer, réessaie certains échecs transitoires et ajuste le budget de sortie lorsque la fenêtre de contexte l'exige.
+
+\section{Architecture de persistance}
+
+\begin{table}[H]
+\centering
+\caption{Supports persistants}
+\label{tab:persistence_ch5}
+\begin{tabular}{p{3.2cm}p{4.2cm}p{6.0cm}}
+\toprule
+\textbf{Donnée ou composant} & \textbf{Support} & \textbf{Contenu} \\
+\midrule
+PostgreSQL & Volume Docker pgdata & Sessions, interactions, sources, métadonnées, timestamps et feedbacks. \\
+Qdrant & Répertoire ./qdrant\_data & Vecteurs, payloads et index des collections. \\
+Runtime & Répertoire ./runtime\_data & Fichiers applicatifs partagés entre l’interface et le backend. \\
+Entrées & Répertoire ./inputs en lecture seule dans l’interface & Documents locaux nécessaires à l’ouverture ou à la consultation. \\
+Modèles & Chemin hôte /app/models/models monté en lecture seule & multilingual-e5-large et Mistral Small 3.1 24B. \\
+Certificats & Répertoire ./certs en lecture seule & Certificats utilisés par Nginx. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+PostgreSQL sépare les sessions et les interactions. Une interaction conserve la requête, la réponse, les sources, les métadonnées, le timestamp et les feedbacks.

@@ -1,0 +1,125 @@
+%==============================================================================
+% CHAPITRE 8 - VERSION AUTONOME
+%==============================================================================
+
+\chapter{Conclusion générale, limites et perspectives}
+\label{chap:conclusion}
+
+\section{Introduction}
+L'objectif était de concevoir, intégrer et déployer un assistant RAG interrogeant SharePoint et Freshservice, avec traçabilité, sécurité, persistance et exploitation. L'audit conclut que cet objectif est atteint au niveau de l'artefact logiciel, sans démonstration quantitative complète de la qualité ou de l'adoption.
+\section{Contributions}
+\begin{table}[H]
+\centering
+\caption{Contributions du PFE}
+\label{tab:contrib_ch8}
+\begin{tabular}{p{4.0cm}p{9.5cm}}
+\toprule
+\textbf{Contribution} & \textbf{Résultat} \\
+\midrule
+C1 - Architecture de services & Séparation de l’interface, de l’orchestration, des embeddings, de la recherche, de l’inférence et de la persistance. \\
+C2 - Accès documentaire multi-source & Pipelines SharePoint et Freshservice, collections Qdrant et périmètres logiques. \\
+C3 - Recherche enrichie & Embeddings multilingues E5, recherche vectorielle, reranking hybride et limites de contexte. \\
+C4 - Traçabilité & Sources gérées par le backend, métadonnées d’exécution et persistance des interactions. \\
+C5 - Sécurité intégrée & SSO PKCE/JWT, clés d’API, principaux Graph/Freshservice, filtre et post-filtrage ACL. \\
+C6 - Résilience & Healthchecks, timeouts, retries, sémaphores, limitation globale et abstention. \\
+C7 - Méthode anti-hallucination du mémoire & Hiérarchie de preuves distinguant implémentation, test, résultat et perspective. \\
+C8 - Base d’évaluation & 66 cas de test codés et protocole de validation complémentaire clairement défini. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Réponse à la problématique}
+\begin{table}[H]
+\centering
+\caption{Réponse synthétique}
+\label{tab:answers_ch8}
+\begin{tabular}{p{4.0cm}p{9.5cm}}
+\toprule
+\textbf{Dimension} & \textbf{Conclusion} \\
+\midrule
+Accès aux connaissances & Oui au niveau fonctionnel : l’interface, le backend, les connecteurs et les collections matérialisent le parcours de question-réponse. \\
+Traçabilité & Oui : les sources et métadonnées sont construites par le backend, enregistrées et affichables indépendamment du texte produit par le modèle. \\
+Sécurité & Partiellement établie : les contrôles existent, mais une garantie exige des tests négatifs, un audit et une politique stricte pour les ACL manquantes. \\
+Persistance et exploitation & Oui au niveau de la conception : PostgreSQL, Qdrant, volumes, healthchecks et mécanismes de charge sont configurés. \\
+Qualité des réponses & Non conclue quantitativement : aucun benchmark annoté et aucun rapport de faithfulness ne sont archivés. \\
+Performance et adoption & Non conclues : les seuils de latence, débit, disponibilité et satisfaction doivent être mesurés. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Limites}
+\begin{table}[H]
+\centering
+\caption{Limites du travail}
+\label{tab:limits_ch8}
+\begin{tabular}{p{4.0cm}p{9.5cm}}
+\toprule
+\textbf{Limite} & \textbf{Conséquence} \\
+\midrule
+Évaluation quantitative & Absence de golden set versionné, de sorties de benchmark et de rapport statistique. \\
+Tests distribués & Les fonctions pures sont bien couvertes, mais les parcours Qdrant, Graph, SSO et E2E doivent être renforcés. \\
+ACL manquantes & La configuration de production observée autorise un mode fail-open sans métadonnées, à réévaluer pour les corpus sensibles. \\
+Prompt injection & Les documents récupérés peuvent contenir des instructions adverses ; aucun filtre spécialisé n’est démontré. \\
+Fraîcheur documentaire & Les connecteurs sont externes au runtime et nécessitent une planification, un état et des alertes fiables. \\
+Infrastructure & La stack Docker Compose sur une VM n’offre pas une haute disponibilité multi-nœuds. \\
+Gouvernance des modèles & L’image vLLM et certains composants utilisent des tags latest ; le versionnement et la reproductibilité doivent être durcis. \\
+Observabilité & Les logs, healthchecks et interactions existent, mais les métriques, traces et alertes doivent être consolidées. \\
+Généralisation & Les conclusions portent sur le contexte DNSI et ne peuvent pas être transférées sans réplication. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Feuille de route}
+\begin{table}[H]
+\centering
+\caption{Feuille de route priorisée}
+\label{tab:roadmap_ch8}
+\begin{tabular}{p{1.2cm}p{3.0cm}p{9.3cm}}
+\toprule
+\textbf{Priorité} & \textbf{Horizon} & \textbf{Actions} \\
+\midrule
+P0 & Avant élargissement du pilote & Passer les ACL sensibles en fail-closed ; créer une matrice de tests positifs/négatifs ; auditer les secrets, TLS, sauvegardes et restauration ; tester les refus Freshservice. \\
+P1 & Évaluation & Construire un golden set représentatif ; mesurer Recall@k, MRR, nDCG, fidélité, exactitude, abstention, latence P50/P95 et concurrence. \\
+P2 & Industrialisation & Ajouter CI/CD, tests des routes, tests Qdrant/Graph, images et modèles versionnés, snapshots de collections et suivi de fraîcheur. \\
+P3 & Observabilité & Centraliser métriques, logs et traces ; suivre les modes RAG/direct, les scores, les refus ACL, les erreurs, le feedback et les coûts GPU. \\
+P4 & Gouvernance et conformité & Documenter les finalités, rôles, données, risques, supervision humaine, transparence utilisateur et processus d’incident. \\
+P5 & Évolutions fonctionnelles & Étendre uniquement après validation : recherche multimodale, tableaux, GraphRAG ciblé, outils agentiques à permissions minimales. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Gouvernance et risques}
+Depuis le 2 août 2026, certaines obligations de transparence de l'AI Act sont applicables. L'assistant doit être clairement identifié et son périmètre expliqué, sans conclure à une classification réglementaire sans analyse dédiée \citep{EUAIActTransparency2026}.
+
+Le NIST AI RMF Generative AI Profile fournit une grille volontaire de gestion des risques. L'OWASP Top 10 identifie la prompt injection comme un risque majeur, y compris via les documents récupérés \citep{NISTGAI_CH8,OWASPPI_CH8}.
+
+\begin{table}[H]
+\centering
+\caption{Axes de gouvernance}
+\label{tab:governance_ch8}
+\begin{tabular}{p{3.5cm}p{10.0cm}}
+\toprule
+\textbf{Axe} & \textbf{Application au projet} \\
+\midrule
+Transparence & Informer clairement les utilisateurs qu’ils interagissent avec un système d’IA et expliquer la portée des réponses. \\
+Supervision humaine & Permettre la vérification des sources, la remontée d’un feedback et l’escalade vers un expert. \\
+Journalisation proportionnée & Conserver les informations nécessaires à l’audit tout en appliquant minimisation, durée de conservation et contrôle d’accès. \\
+Gestion des risques & Maintenir un registre couvrant erreurs factuelles, accès non autorisé, prompt injection, dépendances, indisponibilité et dérive documentaire. \\
+Documentation & Versionner modèles, prompts, paramètres, collections, tests, changements et décisions de gouvernance. \\
+Qualification réglementaire & Faire analyser le rôle de l’organisation et la classification du système ; ne pas supposer automatiquement un statut de système à haut risque. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Perspectives}
+Les priorités sont l'évaluation continue, le durcissement documentaire, l'observabilité et la gouvernance. Les extensions multimodales, GraphRAG ou agentiques ne doivent être introduites qu'après démonstration de leur valeur et analyse de leur risque.
+
+\section{Enseignements}
+\begin{itemize}
+\item Le code actif doit primer sur les présentations et guides devenus obsolètes.
+\item Dans un RAG d’entreprise, les métadonnées d’autorisation sont aussi importantes que les embeddings.
+\item La séparation des services facilite le déploiement, mais augmente le besoin de tests d’intégration et d’observabilité.
+\item Une réponse avec sources n’est fiable que si les sources sont sélectionnées, autorisées et affichées indépendamment du texte du LLM.
+\item Un protocole d’évaluation n’est pas un résultat ; les sorties doivent être versionnées avec la configuration et le corpus.
+\item Les fonctions de repli doivent être explicites : elles améliorent la disponibilité mais peuvent réduire la sécurité ou masquer une panne.
+\item La mise en production d’un assistant génératif est un projet de gouvernance, d’identité et d’exploitation autant qu’un projet de modèle.
+\end{itemize}
+\section{Conclusion générale}
+L'Assistant RAG DNSI aboutit à une chaîne contrôlable : utilisateur identifié, documents filtrés, contexte limité, abstention possible, sources conservées et interactions auditées. La maturité suivante dépend de preuves reproductibles : CI, golden set, métriques, charge, audit ACL, restauration, observabilité et gouvernance.

@@ -1,0 +1,53 @@
+\section{Introduction}
+
+Le développement d'un assistant documentaire en environnement d'entreprise ne relève ni d'une expérimentation purement algorithmique ni d'un simple exercice de programmation. Il implique de comprendre un besoin métier, de concevoir un artefact logiciel, d'intégrer des sources hétérogènes, de gérer des contraintes de sécurité, puis de vérifier le comportement du système dans son environnement de déploiement. La méthodologie doit donc rendre compte à la fois de la construction de la solution et des moyens utilisés pour établir sa conformité au besoin.
+
+Le présent chapitre décrit la démarche appliquée à l'Assistant RAG DNSI. Elle s'appuie sur la Design Science Research, adaptée à un projet d'ingénierie conduit en entreprise. La solution constitue l'artefact principal : un système RAG connecté à SharePoint et Freshservice, organisé autour d'une interface Streamlit, d'une API FastAPI, d'un service d'embeddings, de Qdrant, de PostgreSQL et d'un serveur vLLM.
+
+Une distinction est maintenue entre les éléments effectivement implémentés, les validations dont une preuve est disponible et les évaluations complémentaires proposées. Cette séparation assure la traçabilité des affirmations et évite d'assimiler un protocole envisagé à un résultat obtenu.
+
+\section{Positionnement méthodologique}
+
+\subsection{Une recherche orientée vers la construction d'un artefact}
+
+La Design Science Research considère la création et l'évaluation d'artefacts comme un moyen de produire des connaissances sur un problème concret. \citet{Hevner2004} présentent la recherche en design comme une démarche visant à étendre les capacités humaines et organisationnelles par la construction d'artefacts utiles. \citet{Peffers2007} proposent un processus en six activités : identification du problème, définition des objectifs, conception et développement, démonstration, évaluation et communication.
+
+Ce cadre correspond à la nature du projet. Le travail ne consiste pas à entraîner un nouveau modèle fondamental ni à démontrer une théorie abstraite. Il vise à concevoir une solution opérationnelle permettant d'interroger des connaissances internes, à justifier les décisions techniques et à analyser les limites de l'artefact obtenu.
+
+\subsection{Adaptation pragmatique au contexte d'entreprise}
+
+La démarche n'a pas été conduite comme une succession strictement linéaire d'étapes. Les choix d'ingestion, de stockage vectoriel, de séparation des services, de sécurité et d'interface ont évolué au fur et à mesure des contraintes rencontrées. Certaines activités de conception, de développement et de validation se sont donc chevauchées.
+
+Cette organisation itérative est cohérente avec le cycle de design décrit dans la DSR. Une version de la solution est construite, observée, corrigée puis enrichie. Une difficulté de déploiement, un comportement de recherche insatisfaisant, une incohérence de métadonnées ou un problème d'accès peuvent conduire à modifier l'architecture ou le code.
+
+\section{Cycles de recherche appliqués au projet}
+
+\begin{table}[H]
+\centering
+\caption{Cycles DSR appliqués à l'Assistant RAG DNSI}
+\label{tab:dsr_cycles_ch3}
+\begin{tabular}{p{2.5cm}p{5.2cm}p{5.4cm}}
+\toprule
+\textbf{Cycle} & \textbf{Application au projet} & \textbf{Preuves mobilisées} \\
+\midrule
+Pertinence & Besoin d'accès aux connaissances internes, contraintes d'habilitation et d'exploitation. & Cahier des charges, connecteurs, parcours utilisateur, contraintes d'infrastructure. \\
+Conception & Prototypage puis séparation des services, migration vers Qdrant, intégration des ACL. & Code actif, Docker Compose, scripts de migration, modules RAG et sécurité. \\
+Rigueur & Appui sur la littérature RAG, les référentiels de qualité et les processus de test. & Publications scientifiques, ISO/IEC 25010 et ISO/IEC/IEEE 29119-2. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le cycle de pertinence relie la recherche au contexte organisationnel. Le cycle de conception couvre la construction et l'amélioration de l'artefact. Le cycle de rigueur relie les décisions à des connaissances existantes et à des référentiels de qualité. ISO/IEC 25010:2023 fournit un modèle de qualité du produit logiciel, tandis qu'ISO/IEC/IEEE 29119-2:2021 décrit des processus de test applicables à différents cycles de développement \citep{ISO25010_2023,ISO29119_2_2021}.
+
+\section{Hiérarchie des preuves et traçabilité}
+
+Le dépôt contient du code actif, des fichiers de configuration, des guides, des scripts historiques et des documents rédigés à différentes périodes. Ces sources peuvent diverger. La description du système applique donc la hiérarchie suivante :
+
+\begin{enumerate}
+    \item fichiers de déploiement actifs et code effectivement appelé ;
+    \item tests, scripts d'exploitation et résultats reproductibles ;
+    \item documentation technique vérifiée contre l'implémentation ;
+    \item composants legacy ou documents anciens, uniquement pour expliquer l'évolution.
+\end{enumerate}
+
+Cette hiérarchie évite qu'un nom de modèle, un store vectoriel ou un protocole cité dans un guide ancien soit automatiquement présenté comme actif. Les sources externes sont limitées aux publications scientifiques et documentations officielles nécessaires pour justifier une méthode ou un choix.

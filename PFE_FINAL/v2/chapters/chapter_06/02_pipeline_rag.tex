@@ -1,0 +1,31 @@
+\section{Pipeline conversationnel et documentaire}
+La route \texttt{/chat} exécute une chaîne déterministe comprenant la validation, le small talk, la réécriture éventuelle, la classification, la résolution ACL, l'embedding, la recherche Qdrant, le reranking, la construction du contexte, la génération et la persistance.
+
+\begin{table}[H]
+\centering
+\caption{Étapes de traitement de la route chat}
+\label{tab:chat_steps_ch6}
+\begin{tabular}{p{1.0cm}p{3.1cm}p{9.0cm}}
+\toprule
+\textbf{Étape} & \textbf{Traitement} & \textbf{Implémentation} \\
+\midrule
+1 & Validation & La requête vide est rejetée. Les middlewares vérifient la clé API et la limite globale de requêtes simultanées. \\
+2 & Small talk & Les salutations courtes sont traitées sans recherche documentaire et sans appel au modèle. \\
+3 & Réécriture & Une question dépendante de l’historique peut être reformulée en requête autonome par le LLM, avec validation du résultat. \\
+4 & Classification & QueryClassifier détermine le besoin de RAG à partir de codes de transaction, termes métier, intentions de procédure et longueur de la question. \\
+5 & ACL & Les principaux fournis par l’interface sont normalisés puis complétés, si configuré, par Microsoft Graph et le résolveur Freshservice. \\
+6 & Embedding & Le backend demande au service E5 un vecteur de type query. En cas d’échec, le store peut utiliser un fallback local. \\
+7 & Recherche & Qdrant est interrogé dans le périmètre demandé avec le filtre ACL et un nombre de candidats dépendant du style de réponse. \\
+8 & Post-filtrage & Un second contrôle metadata\_allows\_access retire les éléments qui ne satisfont pas les droits calculés. \\
+9 & Reranking & Le score sémantique est enrichi par l’alignement lexical, le titre du document et les correspondances de phrases. \\
+10 & Contexte & Le nombre d’extraits, le nombre de chunks par document et le budget de caractères sont limités avant génération. \\
+11 & Génération & Le système choisit un prompt RAG strict, un prompt direct, une réponse d’abstention ou un refus Freshservice. \\
+12 & Nettoyage & Les citations ou blocs de sources générés par le modèle sont retirés ; les sources affichées proviennent uniquement du backend. \\
+13 & Persistance & La réponse, les sources et les métadonnées d’exécution sont enregistrées dans PostgreSQL. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le classifieur est heuristique et reconnaît les codes de transaction, les termes métier, les définitions et les intentions de procédure. La réécriture est réservée aux questions dépendantes de l'historique. Le reranking combine score sémantique, alignement lexical, libellé documentaire et correspondances de phrases.
+
+Le prompt RAG impose l'utilisation exclusive des extraits et une phrase d'abstention fixe lorsque l'information n'est pas présente. Les sources affichées sont construites par le backend et non par le texte généré.

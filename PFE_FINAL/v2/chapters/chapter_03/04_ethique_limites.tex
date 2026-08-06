@@ -1,0 +1,47 @@
+\section{Reproductibilité et gestion de configuration}
+
+Le recours à Docker Compose, aux fichiers d'environnement d'exemple, aux modèles montés localement et aux commandes de test contribue à la reproductibilité. La version du code, le fichier Compose, les variables non sensibles, les modèles et les collections Qdrant doivent être enregistrés avec chaque campagne de validation.
+
+Les secrets ne doivent pas être intégrés aux jeux de réplication. Les données internes ne peuvent pas être publiées librement. La reproductibilité complète du corpus est donc limitée par la confidentialité ; elle peut être compensée par la publication des schémas, des scripts, des formats attendus et, lorsque cela est possible, d'un corpus synthétique ou anonymisé.
+
+\section{Considérations éthiques et gestion des risques}
+
+Le projet manipule des documents internes et des identités d'utilisateurs. La minimisation des données, la restriction des accès, la protection des secrets et l'anonymisation des extraits diffusés dans le mémoire sont prioritaires.
+
+L'exécution locale du modèle et des embeddings limite l'envoi de contenus à des services externes. Elle ne supprime pas les autres risques : erreurs de réponse, mauvaise synchronisation des droits, prompt injection contenue dans un document, journalisation excessive ou dépendances vulnérables.
+
+Le NIST AI Risk Management Framework structure la gestion des risques autour de la gouvernance, de la cartographie, de la mesure et du traitement \citep{NISTAIRMF2023}. Dans ce mémoire, il sert de repère pour maintenir une approche fondée sur le risque plutôt que sur une promesse de fiabilité absolue.
+
+\section{Limites méthodologiques et menaces à la validité}
+
+\begin{table}[H]
+\centering
+\caption{Principales menaces à la validité}
+\label{tab:menaces_validite}
+\begin{tabular}{p{3.5cm}p{4.4cm}p{5.3cm}}
+\toprule
+\textbf{Menace} & \textbf{Conséquence} & \textbf{Mesure de réduction} \\
+\midrule
+Corpus d'une seule organisation & Généralisation limitée. & Décrire le corpus et proposer une réplication sur d'autres périmètres. \\
+Corpus évolutif & Résultats variables entre campagnes. & Figer ou identifier précisément l'état des documents. \\
+Documentation hétérogène & Confusion entre stack active et historique. & Vérifier toute affirmation contre le code et la configuration. \\
+Couverture de tests inégale & Défauts non détectés sur certains composants. & Étendre les tests Qdrant, ACL, connecteurs et intégration. \\
+Absence de résultats archivés & Conclusion quantitative impossible. & Conserver configurations, données, commandes et résultats. \\
+Contexte confidentiel & Reproductibilité externe limitée. & Publier méthodes, schémas et données anonymisées lorsque possible. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le projet est étudié dans une seule organisation et sur des corpus métier spécifiques. Les résultats ne peuvent pas être généralisés automatiquement à d'autres entreprises, langues ou structures documentaires. Le corpus évolue au fil des synchronisations ; une évaluation reproductible exige de figer un état ou d'enregistrer les identifiants des documents utilisés.
+
+La présence de plusieurs générations de code et de documentation augmente le risque d'attribuer à la version active un comportement historique. La hiérarchie de preuves réduit ce risque sans l'éliminer entièrement. La couverture de tests est par ailleurs inégale : certaines règles du pipeline sont testées, tandis que les chemins Qdrant, l'intégration complète des ACL et les connecteurs nécessitent une validation plus systématique.
+
+Enfin, l'absence de résultats de benchmark commités limite les conclusions quantitatives possibles. Les résultats chiffrés sont réservés aux campagnes effectivement exécutées et archivées.
+
+\section{Conclusion}
+
+La méthodologie combine une Design Science Research pragmatique et des pratiques de validation logicielle. Elle part d'un besoin organisationnel, construit un artefact par itérations, puis confronte cet artefact à des critères de qualité, de sécurité, d'intégration et de traçabilité.
+
+Les tests unitaires, les configurations actives, les scénarios E2E et le déploiement fournissent des éléments de validation. Les benchmarks et études complémentaires sont conservés comme protocoles jusqu'à ce que leurs résultats soient produits et archivés.
+
+Le chapitre suivant présente les besoins et spécifications de l'Assistant RAG DNSI, puis les traduit en composants, flux et exigences vérifiables.

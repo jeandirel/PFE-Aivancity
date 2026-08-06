@@ -1,0 +1,62 @@
+\section{Génération augmentée par récupération}
+
+\subsection{Mémoire paramétrique et mémoire documentaire}
+
+La génération augmentée par récupération a été formalisée par \citet{Lewis2020} pour associer un modèle génératif à une mémoire externe. Le modèle de langage constitue une mémoire paramétrique : ses connaissances sont distribuées dans ses poids et ne peuvent pas être modifiées simplement. L'index documentaire constitue une mémoire non paramétrique : les documents peuvent être ajoutés, remplacés ou supprimés sans réentraîner le modèle.
+
+Dans une forme simplifiée, le processus suit quatre étapes :
+
+\begin{enumerate}
+    \item encoder la question en un vecteur ;
+    \item rechercher les $k$ fragments les plus pertinents dans l'index ;
+    \item construire un contexte contenant la question et les fragments sélectionnés ;
+    \item demander au modèle génératif de formuler une réponse fondée sur ce contexte.
+\end{enumerate}
+
+On peut représenter ce processus par :
+
+\begin{equation}
+D_k=\operatorname{Retrieve}(q,\mathcal{D}), \qquad y=G(q,D_k),
+\end{equation}
+
+où $q$ est la question, $\mathcal{D}$ le corpus, $D_k$ les passages récupérés et $G$ le modèle génératif.
+
+Le RAG apporte trois propriétés utiles au projet. Il permet d'utiliser des connaissances privées, de mettre à jour le corpus indépendamment du modèle et de présenter les passages à l'origine d'une réponse. Ces propriétés améliorent la traçabilité, mais elles ne garantissent pas l'exactitude. Si les documents récupérés sont incomplets, obsolètes ou non pertinents, le modèle peut produire une réponse incorrecte malgré la présence d'un mécanisme RAG.
+
+\subsection{RAG naïf, avancé et modulaire}
+
+La littérature récente distingue plusieurs niveaux de sophistication \citep{Gao2024RAGSurvey}. Un RAG dit naïf enchaîne directement ingestion, recherche et génération. Un RAG avancé ajoute des traitements avant ou après la récupération : reformulation des requêtes, filtrage, diversification, reranking, compression du contexte ou vérification. Une architecture modulaire sépare davantage les responsabilités afin d'adapter le pipeline à la nature de la question et aux sources disponibles.
+
+L'Assistant RAG DNSI se situe entre le RAG naïf et une architecture avancée. Le backend contient notamment :
+
+\begin{itemize}
+    \item une détection des questions dépendantes de l'historique et une réécriture limitée de la requête ;
+    \item une classification du style de réponse attendu, par exemple définition, procédure ou vue d'ensemble ;
+    \item une recherche sémantique dans une ou plusieurs collections Qdrant ;
+    \item un reranking combinant le score vectoriel, l'alignement lexical, les expressions et les intitulés de documents ;
+    \item une sélection du nombre de fragments selon le type de question ;
+    \item des garde-fous pour certains cas explicitement décrits dans la documentation.
+\end{itemize}
+
+Ces mécanismes sont observables dans \texttt{services/backend/app/rag\_pipeline.py} et \texttt{services/backend/app/vector\_store\_qdrant.py}. Ils ne doivent pas être décrits comme des méthodes universelles ou comme des innovations scientifiques validées. Ce sont des décisions d'ingénierie adaptées à des requêtes métier et qui devront être évaluées sur un jeu de questions représentatif.
+
+\subsection{Reranking et qualité du contexte}
+
+Un retriever dense peut retourner des documents sémantiquement proches mais incapables de répondre précisément à la question. Le reranking consiste à réordonner un ensemble réduit de candidats avec des signaux plus discriminants. Les cross-encodeurs évaluent conjointement la question et chaque passage, mais leur coût est supérieur à celui d'un bi-encodeur. D'autres systèmes utilisent des règles, des scores lexicaux ou une combinaison de signaux.
+
+Le projet n'utilise pas, dans la stack observée, un cross-encodeur appris. Son reranking est hybride et heuristique. Il ajoute au score Qdrant des bonus fondés sur le recouvrement lexical, les expressions de plusieurs mots, les noms de documents et certains cas métier. Cette approche est moins générale qu'un modèle appris, mais elle présente deux avantages pratiques : elle est lisible et ne nécessite pas le déploiement d'un modèle supplémentaire. Sa limite est la dépendance aux règles et aux pondérations choisies.
+
+\subsection{Hallucinations et limites du grounding}
+
+Les modèles de génération apprennent à produire des suites de texte plausibles, et non à vérifier la vérité de chaque énoncé. La littérature regroupe sous le terme d'hallucination les contenus non fondés, contradictoires ou non vérifiables produits par un système génératif \citep{Ji2023Hallucination}. Dans un assistant documentaire, plusieurs erreurs sont possibles :
+
+\begin{itemize}
+    \item le retriever ne retrouve pas le passage pertinent ;
+    \item un passage similaire mais inadéquat est sélectionné ;
+    \item la question porte sur une information absente du corpus ;
+    \item le modèle interprète mal un passage ou mélange plusieurs sources ;
+    \item une instruction contenue dans un document perturbe le comportement du modèle ;
+    \item la réponse ajoute des détails non présents dans le contexte.
+\end{itemize}
+
+Le RAG réduit la dépendance à la mémoire paramétrique, mais il ne doit pas être présenté comme un mécanisme qui « élimine » les hallucinations. Les mesures pertinentes sont la pertinence du contexte, la fidélité de la réponse au contexte, la capacité à s'abstenir en l'absence de preuve et la traçabilité des sources. Ces dimensions seront reprises dans le chapitre d'évaluation.
