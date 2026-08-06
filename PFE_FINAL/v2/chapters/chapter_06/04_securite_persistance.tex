@@ -1,0 +1,63 @@
+\section{Contrôle d'accès}
+\begin{table}[H]
+\centering
+\caption{Implémentation des ACL}
+\label{tab:acl_impl_ch6}
+\begin{tabular}{p{3.5cm}p{9.7cm}}
+\toprule
+\textbf{Mécanisme} & \textbf{Implémentation} \\
+\midrule
+Normalisation & Les alias user, aad-group, sp-group, public et organisation sont convertis en chaînes homogènes. \\
+Filtre Qdrant & build\_qdrant\_acl\_filter accepte un document si un principal correspond ou si acl\_public vaut true. \\
+Contrôle applicatif & metadata\_allows\_access vérifie une intersection entre les principaux de lecture et ceux de l’utilisateur. \\
+Microsoft Graph & GraphUserPrincipalResolver récupère un jeton applicatif, recherche l’utilisateur par OID de préférence, puis parcourt transitiveMemberOf. \\
+Cache & Le jeton Graph et les contextes d’accès sont mis en cache pour limiter les appels réseau. \\
+Freshservice & FreshserviceAgentPrincipalResolver charge un CSV d’agents actifs et ajoute les principaux agent et groupes associés. \\
+Refus explicite & Un probe séparé peut détecter qu’un contenu Freshservice pertinent existe mais qu’il est réservé aux agents. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le résolveur Graph utilise un jeton applicatif, préfère l'OID vérifié lorsque disponible et parcourt \texttt{transitiveMemberOf}. Le résolveur Freshservice charge un CSV d'agents actifs et ajoute des principaux spécialisés.
+
+\section{Persistance}
+\begin{table}[H]
+\centering
+\caption{Persistance SQLAlchemy et PostgreSQL}
+\label{tab:persistence_impl_ch6}
+\begin{tabular}{p{3.5cm}p{9.7cm}}
+\toprule
+\textbf{Élément} & \textbf{Implémentation} \\
+\midrule
+UserSession & id UUID, username unique et date de création. \\
+Interaction & session, conversation, requête, réponse, sources, métadonnées, feedback et timestamp. \\
+JSON & JSONB est utilisé avec PostgreSQL lorsqu’il est disponible ; JSON est utilisé pour le mode SQLite de développement. \\
+Pool & Le moteur PostgreSQL configure pool\_size, max\_overflow et pool\_timeout. \\
+Transaction & Chaque route ouvre une SessionLocal, valide ou annule la transaction, puis ferme la session. \\
+Index SQL & Un index couvre le parcours fréquent user\_session\_id puis timestamp. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Les routes ouvrent une \texttt{SessionLocal}, valident ou annulent la transaction et ferment la session. Cette organisation suit le rôle transactionnel de la Session décrit par SQLAlchemy \citep{SQLAlchemySession2026}.
+
+\section{Résilience}
+\begin{table}[H]
+\centering
+\caption{Mécanismes de résilience}
+\label{tab:resilience_impl_ch6}
+\begin{tabular}{p{3.5cm}p{9.7cm}}
+\toprule
+\textbf{Mécanisme} & \textbf{Comportement} \\
+\midrule
+Lifespan FastAPI & Validation de la configuration et initialisation de la base au démarrage ; fermeture des clients HTTP au shutdown. \\
+Limiteur global & InflightLimiter refuse immédiatement les requêtes au-delà de MAX\_CONCURRENT\_REQUESTS avec HTTP 429. \\
+Sémaphores & Les appels embeddings et LLM disposent de files d’attente et de délais séparés. \\
+Timeouts & Les clients UI, embeddings et vLLM définissent des timeouts de connexion et de réponse. \\
+Retries & Tenacity réessaie les appels embeddings et les erreurs vLLM transitoires avec backoff et jitter. \\
+Contexte vLLM & LLMClient réduit max\_tokens lorsqu’une erreur indique que la fenêtre disponible est insuffisante. \\
+Abstention & Une réponse documentaire non soutenue conduit à un message fixe plutôt qu’à une procédure inventée. \\
+Traçabilité & metadata\_json conserve le mode, le motif, le score, le périmètre, les ACL, les durées et le modèle utilisé. \\
+\bottomrule
+\end{tabular}
+\end{table}
