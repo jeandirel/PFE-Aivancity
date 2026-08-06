@@ -41,6 +41,17 @@ Les chapitres volumineux peuvent être divisés en sous-fichiers LaTeX afin de f
   - quatorze exigences non fonctionnelles assorties de critères de vérification ;
   - contrats d'interface entre Streamlit, FastAPI, embeddings, Qdrant, vLLM et PostgreSQL ;
   - critères d'acceptation et matrice de traçabilité vers le code et les tests.
+- Chapitre 5 — Architecture de la solution : **terminé**.
+  - architecture des services Streamlit, FastAPI, embeddings, Qdrant, vLLM, PostgreSQL et Nginx ;
+  - flux conversationnel et pipeline documentaire hors ligne ;
+  - architecture de sécurité, persistance, déploiement Docker Compose et résilience ;
+  - choix, compromis et limites architecturales.
+- Chapitre 6 — Implémentation de la solution : **terminé**.
+  - interface Streamlit et SSO OAuth 2.0 avec PKCE et validation JWT ;
+  - routes FastAPI, middlewares, contre-pression et cycle de vie des ressources ;
+  - pipeline `/chat`, classification heuristique, réécriture, reranking et prompts stricts ;
+  - service E5, recherche Qdrant, client vLLM et persistance SQLAlchemy/PostgreSQL ;
+  - ACL Microsoft Graph et Freshservice, connecteurs documentaires, tests et limites.
 
 ## Éléments explicitement exclus sans nouvelle preuve
 
