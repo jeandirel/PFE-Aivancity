@@ -1,0 +1,31 @@
+%==============================================================================
+% ABSTRACT AND RESUME
+%==============================================================================
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Enterprise knowledge is often distributed across collaborative and service-management platforms, making it difficult for employees to retrieve reliable information quickly. This final-year project presents the design, development and deployment of the \textbf{Assistant RAG DNSI}, a secure conversational assistant based on Retrieval-Augmented Generation (RAG) for controlled access to internal knowledge originating mainly from SharePoint and Freshservice.
+
+The implemented solution follows a modular architecture. A Streamlit interface manages the user experience and Microsoft authentication. A FastAPI backend orchestrates query classification, contextual rewriting, access-control resolution, semantic retrieval, prompt construction, response generation and persistence. The retrieval layer uses \texttt{multilingual-e5-large} embeddings and Qdrant, while the generative model \texttt{Mistral-Small-3.1-24B-Instruct-2503} is served locally through vLLM on GPU infrastructure. PostgreSQL stores sessions, interactions, sources, metadata and user feedback. Nginx, Docker Compose, health checks and persistent volumes support deployment and operation on a controlled virtual machine.
+
+A major engineering concern is permission-aware retrieval. User and group principals are normalised and incorporated into Qdrant filters before document excerpts are included in the generative context. The system also provides source traceability, explicit abstention when the corpus does not support an answer, concurrency controls, timeouts and retry mechanisms.
+
+The project demonstrates the feasibility of transforming an initial RAG prototype into an enterprise-oriented, modular and deployable assistant. The evaluation chapter distinguishes implemented mechanisms, tests present in the repository and validations that remain to be executed. No quantitative performance or user-study result is claimed without archived evidence. The main remaining priorities are the systematic execution of the active-stack test plan, stricter validation of access-control fallbacks, corpus freshness monitoring and production-grade observability.
+
+\noindent\textbf{Keywords:} Retrieval-Augmented Generation, enterprise knowledge, SharePoint, Freshservice, FastAPI, Qdrant, vLLM, access control, traceability, MLOps.
+
+\clearpage
+
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+Les connaissances d’entreprise sont souvent réparties entre plusieurs plateformes collaboratives et outils de gestion des services, ce qui rend leur recherche lente et incertaine. Ce projet de fin d’études présente la conception, le développement et le déploiement de l’\textbf{Assistant RAG DNSI}, un assistant conversationnel sécurisé fondé sur la génération augmentée par récupération pour l’accès contrôlé à des connaissances internes provenant principalement de SharePoint et de Freshservice.
+
+La solution implémentée repose sur une architecture modulaire. Une interface Streamlit prend en charge l’expérience utilisateur et l’authentification Microsoft. Un backend FastAPI orchestre la classification des requêtes, la réécriture contextuelle, la résolution des droits, la recherche sémantique, la construction du prompt, la génération et la persistance. La couche de recherche utilise le modèle d’embeddings \texttt{multilingual-e5-large} et Qdrant. Le modèle génératif \texttt{Mistral-Small-3.1-24B-Instruct-2503} est servi localement par vLLM sur une infrastructure GPU. PostgreSQL conserve les sessions, interactions, sources, métadonnées et retours utilisateurs. Nginx, Docker Compose, les contrôles de santé et les volumes persistants permettent le déploiement et l’exploitation sur une machine virtuelle contrôlée.
+
+La prise en compte des autorisations documentaires constitue un enjeu central. Les identités et groupes sont normalisés puis intégrés aux filtres Qdrant avant l’envoi des extraits au modèle. Le système assure également la traçabilité des sources, l’abstention lorsque le corpus ne permet pas de répondre, la maîtrise de la concurrence, les délais d’attente et les nouvelles tentatives.
+
+Le projet montre qu’un prototype RAG peut évoluer vers un assistant d’entreprise modulaire et déployable. Le chapitre d’évaluation distingue les mécanismes implémentés, les tests présents dans le dépôt et les validations restant à exécuter. Aucun résultat quantitatif de performance ou d’étude utilisateur n’est revendiqué sans preuve archivée. Les priorités restantes concernent l’exécution systématique du plan de test de la stack active, le durcissement des comportements de repli liés aux ACL, le suivi de la fraîcheur du corpus et l’observabilité de production.
+
+\noindent\textbf{Mots-clés :} génération augmentée par récupération, connaissances d’entreprise, SharePoint, Freshservice, FastAPI, Qdrant, vLLM, contrôle d’accès, traçabilité, MLOps.
