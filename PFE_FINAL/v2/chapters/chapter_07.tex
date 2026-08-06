@@ -1,0 +1,188 @@
+%==============================================================================
+% CHAPITRE 7 - VERSION AUTONOME
+%==============================================================================
+
+\chapter{Évaluation, résultats traçables et discussion}
+\label{chap:evaluation_discussion}
+
+\section{Introduction}
+L'évaluation distingue preuve d'implémentation, test codé, exécution archivée et mesure reproductible. Le dépôt contient des mécanismes importants, mais aucun benchmark complet ni étude utilisateur formalisée n'a été identifié dans l'état audité.
+
+\section{Hiérarchie des preuves}
+\begin{table}[H]
+\centering
+\caption{Hiérarchie des preuves}
+\label{tab:evidence_ch7}
+\begin{tabular}{p{3.0cm}p{4.6cm}p{5.7cm}}
+\toprule
+\textbf{Niveau} & \textbf{Source} & \textbf{Portée} \\
+\midrule
+Niveau 1 - Implémentation & Code actif, Docker Compose, routes et modèles de données. & Confirme qu’un mécanisme existe dans la version auditée. \\
+Niveau 2 - Test codé & Assertions Pytest, scripts de smoke test et scénarios E2E. & Confirme qu’un comportement attendu a été formalisé, pas nécessairement exécuté récemment. \\
+Niveau 3 - Exécution archivée & Rapport de test, logs datés, artefact CI ou export de benchmark. & Permet d’affirmer qu’un test a été exécuté dans une configuration donnée. \\
+Niveau 4 - Mesure reproductible & Jeu de données versionné, protocole, configuration et résultats. & Permet une comparaison quantitative et une analyse statistique. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Inventaire}
+\begin{table}[H]
+\centering
+\caption{Inventaire des preuves disponibles}
+\label{tab:inventory_ch7}
+\begin{tabular}{p{3.1cm}p{1.3cm}p{5.2cm}p{4.0cm}}
+\toprule
+\textbf{Élément} & \textbf{Nombre} & \textbf{Preuve} & \textbf{Interprétation} \\
+\midrule
+Services configurés & 7 & Nginx, UI, backend, embeddings, vLLM, PostgreSQL et Qdrant dans docker-compose.prod.yml. & Implémentation confirmée. \\
+Healthchecks & 7 & Un contrôle de santé est défini pour chaque service de la stack de production. & Configuration confirmée ; exécution non archivée. \\
+Routes backend principales & 6 & /health, /auth/user-session, /chat, deux routes interactions et /feedback. & Implémentation confirmée. \\
+Tests du classifieur & 22 & Cas small talk, indices métier, définitions et décision RAG. & Assertions présentes ; résultat d’exécution non archivé. \\
+Tests du pipeline RAG & 35 & Nettoyage, réécriture, styles, scoring lexical, limites de contexte et réponses contraintes. & Assertions présentes ; résultat d’exécution non archivé. \\
+Tests du store historique & 9 & Ajout, recherche, persistance, rechargement et résilience JSONL de FaissStore. & Ne valide pas Qdrant actif. \\
+Total de fonctions de test backend & 66 & Comptage des fonctions test\_* dans les trois fichiers du dossier principal. & Couverture déclarative, sans rapport CI. \\
+Workflow CI détecté & 0 & Aucun dossier .github/workflows n’a été trouvé dans le dépôt audité. & Absence de preuve d’exécution automatisée. \\
+\bottomrule
+\end{tabular}
+\end{table}
+Les trois fichiers de test contiennent 66 fonctions \texttt{test\_*}. Aucun rapport Pytest ou artefact CI n'est disponible pour conclure à leur réussite sur le commit audité.
+
+\section{Validation fonctionnelle}
+\begin{table}[H]
+\centering
+\caption{Résultats fonctionnels traçables}
+\label{tab:functional_results_ch7}
+\begin{tabular}{p{3.3cm}p{5.0cm}p{5.3cm}}
+\toprule
+\textbf{Fonction} & \textbf{Preuve disponible} & \textbf{Résultat défendable} \\
+\midrule
+Routage conversationnel & Le small talk, les codes transaction, les termes métier et les procédures sont couverts par des tests. & Le comportement attendu est précisément défini. \\
+Réécriture contextuelle & Des tests encadrent le déclenchement et la validité d’une réécriture. & Réduit le risque d’utiliser une réponse du LLM comme requête de recherche. \\
+Nettoyage des sorties & Les préfixes de dialogue, blocs de sources et marqueurs d’extrait sont supprimés. & Les sources affichées restent contrôlées par le backend. \\
+Style de réponse & Les styles vue d’ensemble, procédure, définition et défaut sont testés. & Le nombre d’extraits et le budget de génération peuvent être adaptés. \\
+Abstention & Le prompt et le code prévoient un message fixe lorsque la documentation ne contient pas l’information. & Mécanisme présent ; taux réel d’abstention correcte non mesuré. \\
+Persistance & Les routes créent les sessions, enregistrent les interactions et mettent à jour les feedbacks. & Implémentation confirmée ; test d’intégration base non archivé. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Récupération et génération}
+\begin{table}[H]
+\centering
+\caption{Statut de l’évaluation RAG}
+\label{tab:rag_eval_ch7}
+\begin{tabular}{p{3.0cm}p{6.0cm}p{4.5cm}}
+\toprule
+\textbf{Dimension} & \textbf{Mécanisme observé} & \textbf{Statut} \\
+\midrule
+Encodage & multilingual-e5-large, préfixes query/passage et normalisation L2. & Implémentation confirmée. \\
+Recherche & Qdrant, collections logiques, payloads et filtre ACL. & Implémentation confirmée. \\
+Reranking & Combinaison du score sémantique, de l’alignement lexical, du titre et des phrases. & Fonctions testées unitairement. \\
+Sélection du contexte & Limites par style, par document et par budget de caractères. & Implémentation et tests partiels. \\
+Précision/Recall/MRR/nDCG & Aucun fichier de résultats versionné identifié. & Non mesuré dans le mémoire. \\
+Comparaison de modèles & Aucune campagne reproductible archivée comparant plusieurs embeddings ou LLM. & Aucune conclusion comparative admise. \\
+\bottomrule
+\end{tabular}
+\end{table}
+Aucune métrique de pertinence ou de fidélité n'est retenue sans jeu annoté, configuration et fichier de résultats.
+
+\section{Sécurité}
+\begin{table}[H]
+\centering
+\caption{Évaluation des contrôles de sécurité}
+\label{tab:security_eval_ch7}
+\begin{tabular}{p{3.0cm}p{6.0cm}p{4.5cm}}
+\toprule
+\textbf{Contrôle} & \textbf{Preuve disponible} & \textbf{Statut} \\
+\midrule
+SSO & PKCE S256, state, nonce et validation JWT avec JWKS. & Code confirmé ; test bout en bout avec Entra ID à archiver. \\
+Clé d’API & Middleware X-API-Key et clé d’administration distincte. & Code confirmé. \\
+ACL Qdrant & Filtre par acl\_read\_principals ou acl\_public. & Code confirmé ; tests négatifs dédiés manquants dans la suite principale. \\
+Post-filtrage & metadata\_allows\_access est réappliqué après la recherche. & Défense en profondeur confirmée. \\
+Graph & Résolution de l’utilisateur et des groupes transitiveMemberOf avec cache. & Implémentation confirmée ; dépend de la configuration et de Microsoft Graph. \\
+Freshservice & CSV d’agents, groupes et message de refus explicite. & Implémentation confirmée ; fraîcheur du CSV à superviser. \\
+Secrets & Variables d’environnement et refus des mots de passe PostgreSQL faibles ou de substitution. & Contrôle de démarrage confirmé. \\
+Prompt injection & Aucun filtre dédié d’instructions adverses dans les documents n’est démontré. & Risque résiduel à traiter. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Exploitation}
+\begin{table}[H]
+\centering
+\caption{Évaluation opérationnelle}
+\label{tab:ops_eval_ch7}
+\begin{tabular}{p{3.0cm}p{6.0cm}p{4.5cm}}
+\toprule
+\textbf{Dimension} & \textbf{Mécanisme} & \textbf{Statut} \\
+\midrule
+Démarrage & depends\_on avec condition service\_healthy. & Ordre de démarrage configuré. \\
+Surcharge globale & MAX\_CONCURRENT\_REQUESTS et réponse 429 avec Retry-After. & Code confirmé ; seuil non validé par test de charge. \\
+Files spécialisées & Sémaphores LLM et embeddings avec timeout. & Code confirmé. \\
+Retries & Tenacity sur les appels embeddings et vLLM transitoires. & Code confirmé. \\
+Fenêtre de contexte & Réduction automatique de max\_tokens après une erreur vLLM compatible. & Code confirmé. \\
+Persistance & Volumes PostgreSQL et Qdrant, runtime\_data partagé. & Configuration confirmée ; restauration non testée dans un artefact. \\
+Latence et débit & Aucun rapport P50/P95 ou essai de concurrence versionné. & Non mesuré. \\
+Disponibilité & Healthchecks et restart unless-stopped. & Mécanismes présents ; aucun SLA démontré. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Synthèse}
+\begin{table}[H]
+\centering
+\caption{Synthèse des résultats}
+\label{tab:summary_results_ch7}
+\begin{tabular}{p{4.0cm}p{3.7cm}p{5.8cm}}
+\toprule
+\textbf{Question évaluée} & \textbf{Conclusion} & \textbf{Justification} \\
+\midrule
+Architecture et composants actifs & Établi & Code et docker-compose.prod.yml concordants. \\
+Fonctionnalités principales & Établi au niveau implémentation & Routes, modèles et interface présents. \\
+Comportements unitaires ciblés & Formalisés & 66 fonctions de test écrites ; exécution actuelle non prouvée. \\
+Sécurité ACL & Implémentée, validation incomplète & Filtre et post-filtre présents ; matrice de tests négatifs à compléter. \\
+Qualité de récupération & Non établie quantitativement & Absence de benchmark annoté et de sorties archivées. \\
+Fidélité des réponses & Non établie quantitativement & Prompts stricts et abstention présents, sans score de faithfulness. \\
+Performance & Non établie quantitativement & Aucune distribution de latence ou test de charge archivé. \\
+Acceptation utilisateur & Non évaluée formellement & Feedback applicatif présent, sans étude SUS/TAM traçable. \\
+Aptitude à un pilote contrôlé & Plausible sous conditions & Tests E2E, sécurité et observabilité doivent être exécutés et archivés. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+Le projet démontre la construction d'un assistant RAG d'entreprise cohérent et déployable. Il ne démontre pas encore quantitativement sa supériorité, sa latence, sa disponibilité ou son acceptation.
+
+\subsection{Forces}
+\begin{itemize}
+\item Le dépôt traduit clairement l’architecture en services séparés, avec des contrats et des mécanismes de santé explicites.
+\item Le backend maintient une traçabilité riche : mode, motif de routage, scores, collections, ACL, modèle, budget de tokens et durée.
+\item Les contrôles d’accès interviennent avant la génération et sont complétés par un post-filtrage applicatif.
+\item Le système prévoit l’abstention, le refus Freshservice, la contre-pression et le nettoyage des sources générées par le modèle.
+\item Le vocabulaire métier et les questions de suivi sont traités par des fonctions déterministes qui peuvent être testées indépendamment.
+\end{itemize}
+\subsection{Faiblesses}
+\begin{itemize}
+\item L’absence de CI et de rapports d’exécution rend impossible l’affirmation que les 66 tests passent sur le commit courant.
+\item Les tests du store vectoriel principal Qdrant sont moins développés que ceux du composant FAISS historique.
+\item Les performances documentaires, génératives et systèmes ne sont pas quantifiées par des fichiers de résultats reproductibles.
+\item Le comportement fail-open en absence d’ACL peut être incompatible avec des documents sensibles.
+\item La classification heuristique reste dépendante d’une liste maintenue manuellement.
+\item La fraîcheur du corpus dépend de pipelines externes qui ne sont pas démarrés par la stack conversationnelle.
+\end{itemize}
+\section{Menaces à la validité}
+\begin{table}[H]
+\centering
+\caption{Menaces à la validité}
+\label{tab:validity_ch7}
+\begin{tabular}{p{4.0cm}p{9.5cm}}
+\toprule
+\textbf{Menace} & \textbf{Effet} \\
+\midrule
+Validité interne & Les mécanismes sont observés dans le code, mais certaines branches dépendent de variables d’environnement non disponibles pendant l’audit. \\
+Validité de construction & La présence d’un contrôle ne prouve pas son efficacité face à toutes les attaques ou erreurs de métadonnées. \\
+Validité externe & L’analyse concerne une organisation, un corpus et une architecture sur VM spécifiques. \\
+Validité temporelle & Le code, les collections et les documents peuvent évoluer après la date de l’audit. \\
+Reproductibilité & Le corpus interne et les secrets ne peuvent pas être publiés ; une reproduction externe nécessite un corpus synthétique. \\
+Biais de sélection & Les tests présents couvrent surtout les fonctions pures, moins les intégrations réseau et les erreurs distribuées. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Conclusion}
+Les preuves confirment l'architecture, les fonctions principales, les mécanismes de sécurité et 66 cas de test codés. Elles ne permettent pas d'annoncer des métriques de récupération, de génération, de performance ou d'acceptation.
