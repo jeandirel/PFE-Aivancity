@@ -1,0 +1,35 @@
+\section{Introduction}
+
+La conception de l'Assistant RAG DNSI nécessite de traduire un besoin général d'accès aux connaissances internes en exigences vérifiables. Cette étape évite de décrire la solution uniquement par sa technologie et permet de relier chaque fonctionnalité à un acteur, à une contrainte et à une preuve d'implémentation.
+
+Le chapitre s'appuie prioritairement sur le code actif, les fichiers Docker Compose, les connecteurs SharePoint et Freshservice, le module SSO, les routes FastAPI, les modèles de données et les tests présents dans le dépôt applicatif. La première version du mémoire est utilisée uniquement pour repérer les attentes initiales, sans reprendre ses objectifs chiffrés ou ses composants non confirmés.
+
+La structuration des exigences suit les principes de l'ingénierie des exigences. ISO/IEC/IEEE 29148:2018 définit les processus et les éléments d'information associés aux exigences des systèmes et logiciels \citep{ISO29148_2018}. Le standard est utilisé ici comme guide méthodologique et non comme revendication de conformité formelle.
+
+\section{Périmètre et parties prenantes}
+
+\subsection{Périmètre fonctionnel}
+
+L'Assistant RAG DNSI couvre l'authentification, la gestion des sessions, l'interrogation conversationnelle, la recherche documentaire, l'application des règles d'accès, l'affichage des sources, la persistance des interactions, le feedback, le monitoring et la synchronisation de contenus SharePoint et Freshservice.
+
+Le système ne couvre pas l'entraînement d'un modèle de langage, une garantie formelle d'absence d'erreur, ni une architecture multi-région à haute disponibilité. Ces sujets peuvent constituer des perspectives mais ne sont pas des exigences réalisées du périmètre étudié.
+
+\subsection{Acteurs}
+
+\begin{table}[H]
+\centering
+\caption{Acteurs de l'Assistant RAG DNSI}
+\label{tab:acteurs_ch4}
+\begin{tabular}{p{3.5cm}p{10cm}}
+\toprule
+\textbf{Acteur} & \textbf{Responsabilité ou interaction} \\
+\midrule
+Collaborateur authentifié & Interroge l'assistant, consulte les réponses et sources, retrouve son historique et transmet un feedback. \\
+Agent Freshservice & Accède aux contenus Freshservice soumis à une visibilité spécifique lorsqu'il est reconnu comme agent ou membre d'un groupe autorisé. \\
+Administrateur ou exploitant & Contrôle les services, consulte les données autorisées, analyse les feedbacks et gère les synchronisations et paramètres. \\
+SharePoint & Fournit documents, métadonnées, URL et informations d'autorisation. \\
+Freshservice & Fournit contenus de support et métadonnées selon les exports et synchronisations configurés. \\
+Services d'IA et de données & Embeddings, Qdrant, vLLM et PostgreSQL assurent recherche, génération et persistance. \\
+\bottomrule
+\end{tabular}
+\end{table}
