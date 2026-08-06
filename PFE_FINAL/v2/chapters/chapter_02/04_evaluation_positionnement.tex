@@ -24,11 +24,11 @@ Usage & La réponse et les sources sont-elles compréhensibles et utiles ? & Sc�
 \end{tabular}
 \end{table}
 
-\subsection{Absence de résultats inventés}
+\subsection{Traçabilité et reproductibilité des résultats}
 
-L'ancien mémoire annonçait des taux d'hallucination, des latences, une enquête SUS, des comparaisons statistiques et des hypothèses testées sans fichiers de résultats correspondants. Ces valeurs ne sont pas reprises. Le chapitre d'évaluation ne contiendra que des mesures pouvant être reliées à un script, un log, un jeu de données, un export ou un protocole reproductible.
+Une mesure n'est exploitable dans un mémoire que si son origine, son protocole de collecte et ses conditions d'obtention peuvent être établis. Les résultats retenus dans le chapitre d'évaluation devront donc pouvoir être reliés à un script, un journal d'exécution, un jeu de données, un export ou un protocole reproductible.
 
-Si certaines dimensions n'ont pas encore été mesurées, le mémoire présentera les tests fonctionnels disponibles, les observations vérifiables et un protocole futur. Cette approche est moins spectaculaire qu'un tableau rempli de chiffres, mais elle est scientifiquement et professionnellement défendable.
+Lorsque certaines dimensions n'ont pas fait l'objet d'une mesure quantitative complète, l'analyse s'appuiera sur les tests fonctionnels disponibles, les observations vérifiables et la description d'un protocole d'évaluation complémentaire. Cette distinction entre résultats observés et évaluations à conduire permet de conserver une interprétation rigoureuse des performances de la solution.
 
 \section{Positionnement de l'Assistant RAG DNSI}
 
@@ -40,33 +40,21 @@ Si certaines dimensions n'ont pas encore été mesurées, le mémoire présenter
 \toprule
 \textbf{Concept} & \textbf{Choix du projet} & \textbf{Précaution d'interprétation} \\
 \midrule
-Embeddings denses & \texttt{multilingual-e5-large}, préfixes query/passage, normalisation des vecteurs. & Aucun gain sur le corpus DNSI ne doit être affirmé sans benchmark local. \\
-Base vectorielle & Qdrant avec payloads, collections, URL et ACL. & FAISS reste présent dans des chemins historiques mais n'est pas le store actif principal. \\
-Retrieval & Recherche dense puis reranking lexical et heuristique. & Les règles métier doivent être testées et maintenues ; ce n'est pas un reranker neuronal appris. \\
-Génération & Mistral Small 3.1 24B servi localement par vLLM. & Les performances publiques du modèle ne sont pas des résultats du projet. \\
-Sources & Connecteurs SharePoint et Freshservice. & Distinguer code présent, tests disponibles et couverture effective de production. \\
-Sécurité & Principaux normalisés et filtre ACL Qdrant avant génération. & Le mode de repli sans métadonnées et les erreurs de synchronisation nécessitent des tests négatifs. \\
-Déploiement & Docker Compose, PostgreSQL, Nginx, healthchecks et VM GPU. & Ne pas confondre déploiement effectif et haute disponibilité multi-nœuds. \\
+Embeddings denses & \texttt{multilingual-e5-large}, préfixes query/passage, normalisation des vecteurs. & Les performances sur le corpus DNSI doivent être établies par une évaluation locale. \\
+Base vectorielle & Qdrant avec payloads, collections, URL et ACL. & Les composants FAISS conservés dans le dépôt correspondent à des chemins historiques ou de compatibilité. \\
+Retrieval & Recherche dense puis reranking lexical et heuristique. & Les règles métier doivent être testées et maintenues ; ce mécanisme ne constitue pas un reranker neuronal appris. \\
+Génération & Mistral Small 3.1 24B servi localement par vLLM. & Les performances publiques du modèle ne constituent pas des résultats propres au projet. \\
+Sources & Connecteurs SharePoint et Freshservice. & Le niveau de couverture doit être apprécié à partir des flux effectivement configurés et testés. \\
+Sécurité & Principaux normalisés et filtre ACL Qdrant avant génération. & Le comportement en présence de métadonnées incomplètes doit faire l'objet de tests négatifs. \\
+Déploiement & Docker Compose, PostgreSQL, Nginx, healthchecks et VM GPU. & Cette architecture décrit le déploiement observé, sans préjuger d'une haute disponibilité multi-nœuds. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Le système est ainsi positionné comme une application RAG d'entreprise modulaire, déployée sur une infrastructure interne et connectée à deux sources documentaires. Sa contribution principale est l'intégration cohérente des composants et l'adaptation aux contraintes de la DNSI. Le mémoire ne revendique ni un nouveau modèle de langage, ni un nouvel algorithme de recherche, ni une première étude académique sur MCP.
-
-Les éléments suivants sont explicitement exclus de la description de la version active, sauf preuve ajoutée ultérieurement :
-
-\begin{itemize}
-    \item le nom de produit \textit{AntiGravity} ;
-    \item une architecture MCP en production ;
-    \item Mistral 7B sur CPU comme modèle courant ;
-    \item \texttt{all-mpnet-base-v2} comme modèle d'embeddings actif ;
-    \item FAISS comme base vectorielle principale ;
-    \item une étude utilisateur ou des résultats statistiques non traçables ;
-    \item une garantie d'élimination des hallucinations ou des fuites de données.
-\end{itemize}
+Le système est ainsi positionné comme une application RAG d'entreprise modulaire, déployée sur une infrastructure interne et connectée à plusieurs sources documentaires. Sa contribution principale réside dans l'intégration cohérente des composants, dans l'adaptation du pipeline aux contenus de la DNSI et dans la prise en compte des contraintes de traçabilité, d'habilitation et d'exploitation.
 
 \section{Conclusion}
 
 L'état de l'art met en évidence la complémentarité des composants mobilisés dans l'Assistant RAG DNSI. Les Transformers fournissent les modèles d'encodage et de génération. Les bi-encodeurs permettent de représenter les questions et les passages dans un espace sémantique. Le RAG associe cette recherche à un modèle génératif, tandis que Qdrant apporte la persistance, les payloads et le filtrage nécessaire aux collections documentaires. vLLM assure le service local du modèle Mistral, et les connecteurs adaptent le pipeline aux contraintes de SharePoint et Freshservice.
 
-La littérature montre également qu'aucun de ces composants ne garantit seul la fiabilité. La qualité dépend de la chaîne complète : collecte, découpage, embeddings, recherche, autorisations, contexte, génération, affichage des sources et évaluation. Le chapitre suivant présente la démarche méthodologique employée pour concevoir et valider cet artefact sans confondre les objectifs prévus avec les résultats effectivement obtenus.
+La littérature montre également qu'aucun de ces composants ne garantit seul la fiabilité. La qualité dépend de la chaîne complète : collecte, découpage, embeddings, recherche, autorisations, contexte, génération, affichage des sources et évaluation. Le chapitre suivant présente la démarche méthodologique employée pour concevoir et valider cet artefact en distinguant les objectifs, les observations et les résultats effectivement établis.
