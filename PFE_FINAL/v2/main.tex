@@ -6,6 +6,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[numbers,sort&compress]{natbib}
 \usepackage[english,french]{babel}
 \usepackage{lmodern}
 \usepackage{geometry}
@@ -24,7 +25,6 @@
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,shapes.geometric}
-\usepackage[numbers,sort&compress]{natbib}
 \usepackage[hidelinks]{hyperref}
 \usepackage{url}
 \usepackage{listings}
@@ -63,40 +63,40 @@
 %------------------------------------------------------------------------------
 % PAGE DE COUVERTURE
 %------------------------------------------------------------------------------
+\hypersetup{pageanchor=false}
 \begin{titlepage}
 \thispagestyle{empty}
 \centering
 
-\vspace*{0.7cm}
+\vspace*{0.2cm}
 {\Large\bfseries aivancity School for Technology and Business\par}
-\vspace{0.35cm}
-{\large La Grande École de l'IA \& de la Data\par}
 \vspace{0.25cm}
+{\large La Grande École de l'IA \& de la Data\par}
+\vspace{0.18cm}
 {\normalsize Paris Île-de-France \,$\cdot$\, Nice Côte d'Azur\par}
 
-\vspace{1.2cm}
+\vspace{0.8cm}
 \rule{0.86\textwidth}{0.6pt}\par
-\vspace{0.35cm}
+\vspace{0.25cm}
 {\large\scshape Programme Grande École --- PGE5\par}
-\vspace{0.18cm}
+\vspace{0.12cm}
 {\large\scshape Final Year Project (PFE) --- 2025--2026\par}
-\vspace{0.35cm}
+\vspace{0.25cm}
 \rule{0.86\textwidth}{0.6pt}\par
 
-\vspace{1.7cm}
-{\Huge\bfseries
+\vspace{1.15cm}
+{\fontsize{20}{25}\selectfont\bfseries
 Design, Development, and Deployment of a Secure Retrieval-Augmented Generation (RAG) Conversational Assistant for Enterprise Knowledge Access from SharePoint and Freshservice\par}
 
-\vspace{1.6cm}
+\vspace{0.95cm}
 {\itshape Host Organization:\par}
-\vspace{0.25cm}
-{\Large DNSI --- Direction du Numérique et des Systèmes d'Information\par}
+\vspace{0.18cm}
+{\large DNSI --- Direction du Numérique et des Systèmes d'Information\par}
 
-\vfill
-
+\vspace{1.25cm}
 \begin{tabular}{@{}p{4.8cm}p{8.0cm}@{}}
-\textbf{Author:} & Jean Direl NZE \\[0.35cm]
-\textbf{Supervising Professor:} & Anandaramane CANDASSAMY \\[0.35cm]
+\textbf{Author:} & Jean Direl NZE \\[0.28cm]
+\textbf{Supervising Professor:} & Anandaramane CANDASSAMY \\[0.28cm]
 \textbf{Year of Submission:} & 2026 \\
 \end{tabular}
 
@@ -107,6 +107,7 @@ This document is submitted in partial fulfilment of the requirements\\
 for the Programme Grande École (PGE) diploma at Aivancity.\par}
 
 \end{titlepage}
+\hypersetup{pageanchor=true}
 
 %------------------------------------------------------------------------------
 % PAGES PRELIMINAIRES
