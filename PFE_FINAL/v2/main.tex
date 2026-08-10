@@ -7,7 +7,10 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[numbers,sort&compress]{natbib}
-\usepackage[english,french]{babel}
+\usepackage[main=english,french]{babel}
+% babel (french) can make punctuation like ':' active; that breaks labels such as chap:... written to .aux
+\frenchbsetup{AutoSpacePunctuation=false}
+\shorthandoff{:;!?}
 \usepackage{lmodern}
 \usepackage{geometry}
 \geometry{left=2.7cm,right=2.3cm,top=2.5cm,bottom=2.5cm}
