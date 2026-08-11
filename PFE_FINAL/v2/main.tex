@@ -10,7 +10,10 @@
 \usepackage[main=english,french]{babel}
 % babel (french) can make punctuation like ':' active; that breaks labels such as chap:... written to .aux
 \frenchbsetup{AutoSpacePunctuation=false}
-\shorthandoff{:;!?}
+% Ensure the deactivation is applied inside the french language setup (including what gets written/read via .aux)
+\addto\extrasfrench{\shorthandoff{:;!?}}
+\addto\extrasenglish{\shorthandoff{:;!?}}
+\AtBeginDocument{\shorthandoff{:;!?}}
 \usepackage{lmodern}
 \usepackage{geometry}
 \geometry{left=2.7cm,right=2.3cm,top=2.5cm,bottom=2.5cm}

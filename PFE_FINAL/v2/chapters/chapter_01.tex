@@ -56,6 +56,17 @@ L'utilisateur doit alors ouvrir plusieurs résultats, vérifier leur date, ident
 
 Le besoin exprimé peut être résumé ainsi : permettre à un utilisateur de poser une question en langage naturel et d'obtenir une réponse fondée sur les contenus internes disponibles, tout en conservant la possibilité de contrôler les documents à l'origine de cette réponse.
 
+\begin{figure}[H]
+\centering
+\IfFileExists{figures/chapter_01/parcours_as_is.png}{%
+  \includegraphics[width=0.98\textwidth]{figures/chapter_01/parcours_as_is.png}%
+}{%
+  \fbox{\parbox{0.95\textwidth}{\centering Image manquante : figures/chapter\_01/parcours\_as\_is.png}}%
+}
+\caption{Parcours actuel de recherche d'information (as-is) et principaux points de friction}
+\label{fig:as_is_recherche_ch1}
+\end{figure}
+
 \section{Choix d'une architecture RAG}
 
 \subsection{Principe général}
@@ -69,6 +80,17 @@ Dans le cadre du projet, cette approche répond à trois besoins essentiels :
     \item fournir des sources permettant à l'utilisateur de vérifier la réponse ;
     \item faire évoluer le corpus sans entraîner de nouveau modèle de langage.
 \end{enumerate}
+
+\begin{figure}[H]
+\centering
+\IfFileExists{figures/chapter_01/parcours_to_be.png}{%
+  \includegraphics[width=0.98\textwidth]{figures/chapter_01/parcours_to_be.png}%
+}{%
+  \fbox{\parbox{0.95\textwidth}{\centering Image manquante : figures/chapter\_01/parcours\_to\_be.png}}%
+}
+\caption{Parcours cible avec l'Assistant RAG DNSI (to-be) : recherche assistée, sources et boucle de retour}
+\label{fig:to_be_rag_ch1}
+\end{figure}
 
 Le RAG ne supprime toutefois pas automatiquement les erreurs. La qualité de la réponse dépend du contenu indexé, du découpage documentaire, du modèle d'embeddings, de la stratégie de récupération, du filtrage des résultats et des instructions transmises au modèle génératif. Le mémoire adopte donc une posture d'ingénierie : l'objectif est de construire un système contrôlable et exploitable, et non d'affirmer qu'un modèle génératif fournit une vérité absolue.
 
