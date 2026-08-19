@@ -1,5 +1,5 @@
 %==============================================================================
-% MASTER THESIS — AIVANCITY PGE5
+% PFE REPORT (MÉMOIRE DE PROJET DE FIN D'ÉTUDES) — AIVANCITY PGE5
 % Design, Development, and Evaluation of a RAG Conversational Assistant
 % Based on the Model Context Protocol (MCP) for Secure and Intelligent
 % Access to Enterprise Knowledge Stored in SharePoint
@@ -17,6 +17,11 @@
 %------------------------------------------------------------------------------
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
+\DeclareUnicodeCharacter{2265}{\ensuremath{\geq}}
+\DeclareUnicodeCharacter{2264}{\ensuremath{\leq}}
+\DeclareUnicodeCharacter{2192}{\ensuremath{\to}}
+\DeclareUnicodeCharacter{00D7}{\ensuremath{\times}}
+\DeclareUnicodeCharacter{00B7}{\ensuremath{\cdot}}
 \usepackage[english]{babel}
 \usepackage{lmodern}
 \usepackage{microtype}
@@ -52,9 +57,12 @@
 \usepackage{multirow}
 \usepackage{tabularx}
 
+% Diagrams
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, backgrounds, calc}
+
 % Code listings
 \usepackage{listings}
-\usepackage{minted}
 \lstset{
   basicstyle=\ttfamily\footnotesize,
   breaklines=true,
@@ -63,6 +71,13 @@
   numbers=left,
   numberstyle=\tiny,
   tabsize=2
+}
+\lstdefinelanguage{yaml}{
+  keywords={true, false, null},
+  sensitive=false,
+  comment=[l]{\#},
+  morestring=[b]',
+  morestring=[b]"
 }
 
 % Hyperlinks and PDF metadata
@@ -73,7 +88,7 @@
   urlcolor=blue,
   pdftitle={RAG Conversational Assistant Based on MCP for Enterprise SharePoint Knowledge Access},
   pdfauthor={Jean Direl NZE},
-  pdfsubject={Master Thesis — Aivancity PGE5},
+  pdfsubject={Mémoire de Projet de Fin d'Études (PFE) — Aivancity PGE5},
   pdfkeywords={RAG, MCP, Model Context Protocol, SharePoint, Enterprise AI, LLM, FAISS}
 ]{hyperref}
 
@@ -92,10 +107,11 @@
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\leftmark}
-\fancyhead[R]{\small Jean Direl NZE — Aivancity PGE5}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyhead[R]{\small Aivancity PGE5}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{14.5pt}
 
 % Chapter styling
 \usepackage{titlesec}

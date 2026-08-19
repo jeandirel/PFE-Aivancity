@@ -109,8 +109,41 @@ Les éléments suivants nécessitent des données réelles avant la soumission f
 3. **Chapitre 8** : compléter les réponses aux RQ avec les métriques réelles
 4. **Cover page** : compléter le nom du directeur de mémoire (`[Supervisor Name]`)
 5. **Remerciements** : compléter les placeholders personnels
-6. **Appendice C** : renseigner le SHA-256 du modèle GGUF téléchargé
-7. **Figures et captures** : ajouter les captures d'écran de l'interface Streamlit et les diagrammes d'architecture dans le dossier `figures/`
+6. **Appendice C** : renseigner le SHA-256 du modèle GGUF téléchargé (commande : `sha256sum mistral-7b-instruct-v0.2.Q4_K_M.gguf`)
+7. **Captures d'écran** : ajouter les captures de l'interface Streamlit (nécessite le système en fonctionnement)
+
+## 4bis. Finalisation du 6 juillet 2026
+
+Interventions complémentaires réalisées lors de la passe de finalisation :
+
+1. **Diagrammes d'architecture ajoutés** (point 7 partiellement résolu) : trois figures TikZ vectorielles dans le chapitre 4 — Fig. 4.1 architecture quatre couches (remplace le pseudo-schéma en boîtes texte), Fig. 4.2 pipeline de traitement de requête avec filtrage ACL, Fig. 4.3 topologie de déploiement Docker. La liste des figures n'est plus vide.
+2. **Corrections de compilation** : le document ne compilait pas (150+ erreurs). Corrigé : dollars mathématiques échappés `\$...\$` → `$...$` (ch03, ch06, ch08, introduits par les commits d'audit du 18 juin), caractères Unicode (≥, →, ×, ·) déclarés dans le préambule, langage `yaml` défini pour le package listings, package `minted` retiré (chargé mais jamais utilisé), hauteur d'en-tête corrigée.
+3. **En-têtes de page** : le titre du chapitre chevauchait « Jean Direl NZE — Aivancity PGE5 » sur toutes les pages ; en-tête simplifié (chapitre à gauche, « Aivancity PGE5 » à droite).
+4. **PDF recompilé** : `thesis.pdf` régénéré (99 pages, 0 erreur, 0 référence indéfinie, bibliographie et glossaire résolus). Note : `thesis.docx` n'a pas été régénéré et est obsolète.
+
+Aucune valeur expérimentale n'a été ajoutée : les [TBC] du chapitre 6 restent volontairement vides en attendant les mesures réelles (voir §2.1).
+
+## 4ter. Passe anti-hallucinations du 6 juillet 2026
+
+Relecture intégrale (abstract, ch. 1–8, annexes A–E, bibliographie) par quatre relecteurs indépendants, ~45 problèmes corrigés. Principales catégories :
+
+1. **Résultats affirmés sans données** : résumé français (limite CPU présentée comme un constat), ch. 5 (« measured perplexity degradation », « developed and evaluated »), ch. 6–8 (temps verbaux au passé pour l'étude utilisateur et l'annotation jamais menées, « the evidence supports », « this thesis confirms », « early-stage ablation testing », « validated against the evidence base »), annexe B (passé → futur). Tout est reformulé en protocole/attendu/[TBC].
+2. **Faits inventés ou faux** : statistique « 30 % » attachée à Maynez et al. (le papier ne dit pas cela) ; entrée bibliographique Anthropic2023 au titre inexistant (remplacée par le model card réel) ; auteur erroné de Rawte et al. (Abhijit → Amitava Das) ; rôles MCP faux (Host/Server/« Transport » → Host/Client/Server) ; numéros d'annexes ISO 27001:2013 cités avec la référence 2022 ; explication confabulée « WebSocket inspection » pour un blocage SSE ; κ de Cohen « par paire » (statistiquement absurde, y compris un champ JSON avec valeur 0.85 inventée en annexe A).
+3. **Contradictions internes** : température 0 vs 0.1 (ch. 3) ; composition du benchmark (40+10 vs 20/15/10+5 — alignée sur 20 factoid / 15 multi-hop / 10 procédural / 5 sans réponse) ; H4 citant « NFR04 » qui est l'exigence OAuth (→ budget dérivé de NFR01) ; TC1–TC4 mal listés au ch. 8 ; ablation A2 vs A4 au lieu de A3 vs A4 (ch. 7 et note ch. 6) ; NFR06 (50 utilisateurs) intestable avec le protocole (→ 20, périmètre PoC) ; budget de contexte 4096 sans réserve de sortie (équation corrigée, ≈ 2800 tokens ≈ 5 chunks = k) ; K adaptatif vs K=20 fixe ; transport HTTP/SSE vs streamable-http ; latences 20–40 s vs 25–45 s ; décompte « six resolved » contredit par le tableau ; `cross_encoder.rank()` inexistant dans la version pinnée (→ `predict()`) ; docker-compose sans volume `/models` ni `LLM_TEMPERATURE`.
+4. **Hypothèses intestables** (ch. 3) : H3 sans baseline BM25 dans le protocole (ajoutée, cohérente avec la table 6.2) ; H5 sans instrument SharePoint (TAM administré pour les deux systèmes) ; H6 sans ablation dédiée (renvoyée à l'étude d'ablation du ch. 6) ; test de McNemar spécifié pour H1.
+5. **Rhétorique LLM** : ouverture grandiloquente du ch. 1, gabarits « not merely X — it is Y » répétés, aphorismes (« A researcher who cannot honestly criticize... »), auto-satisfaction (« methodological rigor... That is what a PFE requires »), « innovations » → « contributions ». Supprimés ou reformulés.
+
+PDF recompilé : 100 pages, 0 erreur, 0 référence indéfinie.
+
+## 4quater. Passe d'ancrage bibliographique du 7 juillet 2026
+
+Recherches internet systématiques (quatre agents, chaque source vérifiée en ligne avant citation — aucune référence ajoutée de mémoire) :
+
+1. **Vérification des 38 références d'origine** : 30 correctes ; 7 corrigées — Johnson et al. (FAISS) année 2019 → 2021 + DOI ; Reimers & Gurevych booktitle complet EMNLP-IJCNLP ; Ma et al. version publiée EMNLP 2023 (le titre mélangeait deux versions) ; Anthropic2024MCP titre inventé → « Introducing the Model Context Protocol » + URL officielle ; Microsoft2024 et MicrosoftGraph2024 titres inexistants → pages Microsoft Learn réelles avec URLs ; Brooke 1996 initiales d'éditeur (McClelland I. L.). AivancityGuide2025 : document interne, non vérifiable publiquement (attendu).
+2. **24 nouvelles références vérifiées** intégrées dans le texte : instruments et statistiques (Cohen 1960, Landis & Koch 1977, Wilcoxon 1945, McNemar 1947, Manning et al. 2008, Robertson & Zaragoza 2009, Efron & Tibshirani 1993, Bangor et al. 2009, Sauro 2011), standards et systèmes (RFC 6749, RFC 7636, spécification MCP rev. 2025-11-25, Dettmers & Zettlemoyer ICML 2023, llama.cpp, model card Mistral-7B-Instruct-v0.2 — fenêtre 32k confirmée, MTEB/Muennighoff et al. 2023, sbert.net, Greshake et al. AISec 2023), contexte et adoption (McKinsey Global Institute 2012 « nearly 20% of the workweek », Microsoft 365 Blog 2020 « 200M MAU SharePoint », adoption MCP par OpenAI mars 2025 et Microsoft Build 2025, Jeong & Lee IEEE Access 2025 et Chen et al. ACM SAC 2025 sur le RAG à contrôle d'accès).
+3. **Corrections induites** : attribution de l'échelle d'adjectifs SUS (Brooke → Bangor et al. 2009) ; seuil SUS 68 = moyenne empirique (Sauro), pas « good » ; « over 100 RAG variants » non vérifiable → reformulé ; faiblesse non-anglais de MiniLM non sourcée → qualité benchmark (MTEB) ; revendication de nouveauté nuancée (« to the best of our knowledge ») face aux travaux 2025 sur le RAG à contrôle d'accès, désormais cités dans l'état de l'art et le research gap.
+
+Bibliographie : 38 → 62 entrées. PDF recompilé : 102 pages, 0 erreur.
 
 ---
 

@@ -50,7 +50,7 @@ NFR02 & Performance & FAISS retrieval latency & $\leq$ 500ms for up to 100k chun
 NFR03 & Security & Document access enforcement & Zero unauthorized document leakage \\
 NFR04 & Security & Authentication & OAuth 2.0 delegated permissions via Microsoft Entra ID \\
 NFR05 & Reliability & Availability & $\geq$ 99\% during business hours \\
-NFR06 & Scalability & Concurrent users & $\geq$ 50 concurrent users without degradation \\
+NFR06 & Scalability & Concurrent users & $\geq$ 20 concurrent users without degradation (PoC scope) \\
 NFR07 & Maintainability & Component coupling & Each component replaceable independently \\
 NFR08 & Deployability & Network compatibility & Operational behind corporate proxy \\
 NFR09 & Compliance & Data locality & Document content not persisted outside the DNSI network perimeter \\
@@ -82,34 +82,37 @@ The AntiGravity system comprises four architectural layers:
 
 \begin{figure}[H]
 \centering
-\fbox{\parbox{0.92\textwidth}{
-\begin{center}
-\textbf{LAYER 1 --- PRESENTATION}\\
-Streamlit Web Application (Python)\\
-Session management $\cdot$ Source citation display $\cdot$ Feedback collection
-\end{center}
-\vspace{0.2cm}\hrule\vspace{0.2cm}
-\begin{center}
-\textbf{LAYER 2 --- CONVERSATIONAL INTELLIGENCE}\\
-MCP Conversational Client\\
-Query classification $\cdot$ Context assembly $\cdot$ Re-ranking $\cdot$ Prompt engineering\\
-LLM Interface (Mistral 7B Instruct)
-\end{center}
-\vspace{0.2cm}\hrule\vspace{0.2cm}
-\begin{center}
-\textbf{LAYER 3 --- CONTEXT SERVER (MCP)}\\
-MCP Context Server\\
-ACL-filtered semantic search $\cdot$ FAISS index $\cdot$ Document store\\
-User session context $\cdot$ Permission enforcement
-\end{center}
-\vspace{0.2cm}\hrule\vspace{0.2cm}
-\begin{center}
-\textbf{LAYER 4 --- DATA SOURCES}\\
-SharePoint CERP (Microsoft Graph API $\cdot$ OAuth 2.0 $\cdot$ SSO)\\
-Document formats: PDF, DOCX
-\end{center}
-}}
-\caption{AntiGravity four-layer architecture overview}
+\begin{tikzpicture}[
+  layer/.style={draw, rounded corners=2pt, minimum width=0.88\textwidth,
+                minimum height=1.55cm, align=center, font=\small, fill=lightgray},
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  node distance=0.45cm
+]
+\node[layer] (l1) {\textbf{Layer 1 --- Presentation}\\
+  Streamlit Web Application (Python)\\
+  {\footnotesize Session management $\cdot$ Source citation display $\cdot$ Feedback collection}};
+\node[layer, below=of l1] (l2) {\textbf{Layer 2 --- Conversational Intelligence}\\
+  MCP Conversational Client $\cdot$ LLM Interface (Mistral 7B Instruct)\\
+  {\footnotesize Query classification $\cdot$ Context assembly $\cdot$ Re-ranking $\cdot$ Prompt engineering}};
+\node[layer, below=1.3cm of l2, fill=aivancityblue!12] (l3) {\textbf{Layer 3 --- Context Server (MCP)}\\
+  MCP Context Server\\
+  {\footnotesize ACL-filtered semantic search $\cdot$ FAISS index $\cdot$ Document store $\cdot$ Permission enforcement}};
+\node[layer, below=of l3] (l4) {\textbf{Layer 4 --- Data Sources}\\
+  SharePoint CERP (Microsoft Graph API $\cdot$ OAuth 2.0 $\cdot$ SSO)\\
+  {\footnotesize Document formats: PDF, DOCX}};
+
+\draw[flow, <->] (l1) -- (l2);
+\draw[flow, <->] (l2) -- (l3);
+\draw[flow, <->] (l3) -- (l4);
+
+\draw[dashed, thick, aivancityblue]
+  ($(l2.south west)!0.5!(l3.north west)+(-0.25,0)$) --
+  ($(l2.south east)!0.5!(l3.north east)+(0.25,0)$);
+\node[anchor=south east, font=\scriptsize\itshape, text=aivancityblue]
+  at ($(l2.south east)!0.5!(l3.north east)+(0.25,0.07)$)
+  {MCP protocol boundary --- security enforcement point};
+\end{tikzpicture}
+\caption{AntiGravity four-layer architecture overview. The dashed line marks the MCP protocol boundary between the conversational layer and the context server, which is the structural security enforcement point.}
 \label{fig:architecture-overview}
 \end{figure}
 
@@ -162,7 +165,7 @@ Recursive character & Split hierarchically: paragraphs $\to$ sentences $\to$ cha
 \end{tabularx}
 \end{table}
 
-\paragraph{Selected strategy: Recursive character splitting.} Target chunk size: \textbf{512 tokens}, overlap: \textbf{64 tokens}. This choice is justified by: (1) compatibility with the embedding model's context window; (2) the 64-token overlap prevents concepts spanning boundaries from losing their referent (an issue observed with zero-overlap in early experiments); (3) preliminary testing showed chunks below 256 tokens lacked sufficient context for meaningful embedding representations, while chunks above 1024 tokens reduced precision by bundling distinct concepts.
+\paragraph{Selected strategy: Recursive character splitting.} Target chunk size: \textbf{512 tokens}, overlap: \textbf{64 tokens}. This choice is justified by: (1) compatibility with the embedding model's context window; (2) the 64-token overlap prevents concepts spanning boundaries from losing their referent, a known failure mode of zero-overlap chunking \citep{Gao2024}; (3) chunks below 256 tokens are expected to lack sufficient context for meaningful embedding representations, while chunks above 1024 tokens reduce precision by bundling distinct concepts --- the chosen configuration is to be validated empirically in Chapter~\ref{chap:evaluation}.
 
 Each chunk stores: document ID, SharePoint item ID, chunk index, character offset, file name, document title, section heading, last modified date, and the permission manifest entry for the parent document.
 
@@ -175,7 +178,7 @@ Each chunk stores: document ID, SharePoint item ID, chunk index, character offse
 
 \begin{table}[H]
 \centering
-\caption{Embedding model trade-off analysis}
+\caption{Embedding model trade-off analysis. MTEB average scores from the Massive Text Embedding Benchmark \citep{Muennighoff2023}.}
 \label{tab:embedding-models}
 \begin{tabularx}{\textwidth}{@{}lXllll@{}}
 \toprule
@@ -188,7 +191,7 @@ Each chunk stores: document ID, SharePoint item ID, chunk index, character offse
 \end{tabularx}
 \end{table}
 
-\paragraph{Selected: \texttt{all-mpnet-base-v2}.} The OpenAI \texttt{ada-002} model offers superior benchmark performance but was rejected on two grounds: (1) NFR09 prohibits transmitting document content to external APIs; (2) $\sim$100ms per-query latency would exceed the NFR01 budget under realistic load. \texttt{all-MiniLM-L6-v2} was rejected due to lower dimensionality and observed degradation on French-language technical text present in the DNSI corpus.
+\paragraph{Selected: \texttt{all-mpnet-base-v2}.} The OpenAI \texttt{ada-002} model offers superior benchmark performance but was rejected on two grounds: (1) NFR09 prohibits transmitting document content to external APIs; (2) $\sim$100ms per-query latency would exceed the NFR01 budget under realistic load. \texttt{all-MiniLM-L6-v2} was rejected due to its lower dimensionality and its generally lower benchmark quality \citep{Muennighoff2023}, a concern for the French-language technical content of the DNSI corpus.
 
 \subsection{FAISS Index Construction}
 
@@ -203,7 +206,7 @@ The index is built offline during ingestion and loaded into memory at server sta
 
 \subsection{MCP Server Design}
 
-The MCP Context Server implements the MCP server specification \citep{Anthropic2024MCP} in Python, exposing three MCP capabilities:
+The MCP Context Server implements the MCP server specification \citep{Anthropic2024MCP, MCPSpec2025} in Python, exposing three MCP capabilities:
 
 \begin{itemize}
   \item \textbf{Resources:} The corpus as addressable document chunks (accessible by chunk ID).
@@ -220,23 +223,55 @@ The ACL enforcement mechanism operates in six steps:
   \item The MCP client sends a \texttt{search\_documents} tool call with the query text and user OAuth token.
   \item The MCP server resolves the user's effective group membership via the Graph API \texttt{/me/transitiveMemberOf} endpoint.
   \item The user's \textit{effective permission set} is constructed: the union of the user's direct identity and all group memberships.
-  \item FAISS retrieval returns the top-$K$ candidates ($K = 20$, before re-ranking to top-$k = 5$).
+  \item FAISS retrieval returns the top-$K$ candidates ($K = 20$ by default, adjusted by query class as described in Section~\ref{sec:arch-query}, before re-ranking to top-$k = 5$).
   \item Each candidate chunk is matched against the permission manifest. Chunks whose parent document has no permission intersection with the user's effective permission set are removed.
   \item Filtered candidates proceed to re-ranking.
 \end{enumerate}
 
+Figure~\ref{fig:query-flow} illustrates the complete query processing flow, from user query to cited response, highlighting where ACL filtering occurs relative to retrieval and re-ranking.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  qbox/.style={draw, rounded corners=2pt, minimum width=5.6cm, minimum height=0.85cm,
+               align=center, font=\footnotesize, fill=lightgray},
+  qboxsec/.style={qbox, fill=aivancityblue!12},
+  note/.style={font=\scriptsize\itshape, align=left, anchor=west},
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  node distance=0.35cm
+]
+\node[qbox] (q) {\textbf{1. User query} (authenticated session, OAuth token)};
+\node[qbox, below=of q] (cls) {\textbf{2. Query classification}\\ answerability + complexity};
+\node[qbox, below=of cls] (emb) {\textbf{3. Query embedding}\\ \texttt{all-mpnet-base-v2} (768-d, L2-normalized)};
+\node[qbox, below=of emb] (faiss) {\textbf{4. FAISS over-retrieval}\\ \texttt{IndexFlatIP}, top-$K=20$ candidates};
+\node[qboxsec, below=of faiss] (acl) {\textbf{5. ACL filtering (MCP server)}\\ permission manifest $\cap$ effective permission set};
+\node[qbox, below=of acl] (rerank) {\textbf{6. Cross-encoder re-ranking}\\ \texttt{ms-marco-MiniLM-L-6-v2}, top-$k=5$};
+\node[qbox, below=of rerank] (prompt) {\textbf{7. Prompt assembly}\\ system prompt + context block + history + query};
+\node[qbox, below=of prompt] (llm) {\textbf{8. Generation}\\ Mistral 7B Instruct (temperature = 0.1)};
+\node[qbox, below=of llm] (resp) {\textbf{9. Response with source citations}};
+
+\foreach \a/\b in {q/cls, cls/emb, emb/faiss, faiss/acl, acl/rerank, rerank/prompt, prompt/llm, llm/resp}
+  \draw[flow] (\a) -- (\b);
+
+\node[note, right=0.4cm of cls] {out-of-scope $\to$ graceful refusal (FR08)};
+\node[note, right=0.4cm of acl, text=aivancityblue] {unauthorized chunks removed\\ before any LLM exposure (NFR03)};
+\end{tikzpicture}
+\caption{ACL-aware query processing pipeline. Permission filtering (step 5, highlighted) occurs inside the MCP Context Server, between vector retrieval and re-ranking, so unauthorized content never reaches the prompt.}
+\label{fig:query-flow}
+\end{figure}
+
 \paragraph{Security guarantee.} No unauthorized document content is ever injected into the LLM prompt or transmitted to the client. The MCP boundary enforces this structurally.
 
-\paragraph{Over-retrieval design.} The ratio $K/k = 4$ ensures the user receives $k = 5$ authorized results even when a significant fraction of top-$K$ candidates are permission-filtered. User group membership is session-cached with a 5-minute TTL to reduce authentication latency.
+\paragraph{Over-retrieval design.} The default ratio $K/k = 4$ ensures the user receives $k = 5$ authorized results even when a significant fraction of top-$K$ candidates are permission-filtered. User group membership is session-cached with a 5-minute TTL to reduce authentication latency.
 
 \subsection{Context Window Management}
 
 The available context budget for document chunks is computed as:
 \begin{equation}
-  C_{\text{docs}} = C_{\text{model}} - C_{\text{system}} - C_{\text{query}} - C_{\text{margin}}
+  C_{\text{docs}} = C_{\text{ctx}} - C_{\text{system}} - C_{\text{query}} - C_{\text{output}} - C_{\text{margin}}
   \label{eq:context-budget}
 \end{equation}
-where $C_{\text{model}} = 4096$ tokens (Mistral 7B), $C_{\text{system}} \approx 150$ tokens, $C_{\text{query}} \leq 512$ tokens, $C_{\text{margin}} = 128$ tokens. Typical available budget: $\approx 3300$ tokens (6--7 chunks at 512 tokens each).
+where $C_{\text{ctx}} = 4096$ tokens (the context window configured at deployment for CPU memory and latency reasons; the Mistral 7B Instruct v0.2 model itself supports up to 32k tokens \citep{MistralAI2023V02}), $C_{\text{system}} \approx 150$ tokens, $C_{\text{query}} \leq 512$ tokens, $C_{\text{output}} = 512$ tokens reserved for generation, and $C_{\text{margin}} = 128$ tokens. Typical available budget: $\approx 2800$ tokens (5 chunks at 512 tokens each, consistent with $k = 5$).
 
 %------------------------------------------------------------------------------
 \section{Query Processing and Re-ranking}
@@ -254,7 +289,7 @@ Incoming queries are classified along two dimensions:
 \subsection{Re-ranking}
 \label{subsec:reranking}
 
-\paragraph{Selected: \texttt{cross-encoder/ms-marco-MiniLM-L-6-v2}.} This cross-encoder re-scorer is applied to the top-$K$ ACL-filtered candidates, reordering them by joint (query, passage) relevance score. At 512-token chunks and batch size 20, re-ranking latency is approximately 200--400ms on CPU, within the NFR01 budget. The precision improvement from re-ranking is empirically validated in Chapter~\ref{chap:evaluation}.
+\paragraph{Selected: \texttt{cross-encoder/ms-marco-MiniLM-L-6-v2}.} This cross-encoder re-scorer, trained on the MS MARCO passage ranking task \citep{SBERTCrossEncoder2024, Nogueira2019}, is applied to the top-$K$ ACL-filtered candidates, reordering them by joint (query, passage) relevance score. At 512-token chunks and batch size 20, re-ranking latency is approximately 200--400ms on CPU, within the NFR01 budget. The precision improvement from re-ranking is empirically validated in Chapter~\ref{chap:evaluation}.
 
 %------------------------------------------------------------------------------
 \section{Generation Pipeline}
@@ -265,7 +300,7 @@ Incoming queries are classified along two dimensions:
 
 \textbf{Mistral 7B Instruct} \citep{Jiang2023} was selected for three reasons: (1) competitive instruction-following performance at a deployable model size; (2) on-premises deployment satisfying NFR09; (3) stronger French-language capability than comparable English-centric models, relevant for the DNSI corpus.
 
-Commercial API-only models (GPT-4, Claude) were evaluated but rejected on NFR09 grounds: their inference requires transmitting document content to external servers.
+Commercial API-only models (GPT-4, Claude) were considered and rejected at design time on NFR09 grounds: their inference requires transmitting document content to external servers.
 
 \subsection{Prompt Engineering}
 \label{subsec:prompt-engineering}
@@ -305,7 +340,7 @@ Generation parameters: temperature=0.1, top\_p=0.9, max\_new\_tokens=512, repeti
 
 \subsection{Authentication Flow}
 
-OAuth 2.0 Authorization Code flow with PKCE, against Microsoft Entra ID:
+OAuth 2.0 Authorization Code flow \citep{RFC6749} with PKCE \citep{RFC7636}, against Microsoft Entra ID:
 \begin{enumerate}
   \item User is redirected to Entra ID login (supporting MFA per organization policy).
   \item Entra ID returns an authorization code; the application exchanges it for a delegated access token (\texttt{Sites.Read.All}, \texttt{Files.Read.All}).
@@ -343,11 +378,43 @@ The system deploys as three containerized services:
 
 \begin{itemize}
   \item \textbf{Ingestion Worker:} Scheduled nightly job that crawls SharePoint, processes documents, and rebuilds the FAISS index and permission manifest.
-  \item \textbf{MCP Context Server:} Always-on service exposing MCP over HTTP/SSE transport with the FAISS index resident in memory.
+  \item \textbf{MCP Context Server:} Always-on service exposing MCP over the streamable-HTTP transport with the FAISS index resident in memory.
   \item \textbf{Streamlit Application:} User-facing web application embedding the MCP client and LLM inference client.
 \end{itemize}
 
-\paragraph{Corporate proxy.} The DNSI's TLS-terminating proxy required configuring all HTTP clients with the proxy certificate in their trust stores, a proxy bypass list for internal service communication, and on-premises Mistral AI deployment to eliminate external API dependencies.
+Figure~\ref{fig:deployment} shows the deployment topology and the direction of data flows between services.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  svc/.style={draw, rounded corners=2pt, minimum width=3.6cm, minimum height=1.5cm,
+              align=center, font=\footnotesize, fill=lightgray},
+  ext/.style={svc, fill=white, dashed},
+  flow/.style={-{Stealth[length=2.5mm]}, thick},
+  lbl/.style={font=\scriptsize, midway, align=center}
+]
+\node[ext] (user) {\textbf{User}\\ browser (SSO/MFA)};
+\node[svc, right=2.4cm of user] (app) {\textbf{Streamlit App}\\ MCP client\\ LLM inference};
+\node[svc, right=2.4cm of app, fill=aivancityblue!12] (mcp) {\textbf{MCP Context Server}\\ FAISS index (in memory)\\ permission manifest};
+\node[svc, below=2.2cm of mcp] (ing) {\textbf{Ingestion Worker}\\ nightly crawl\\ index rebuild};
+\node[ext, below=2.2cm of user] (sp) {\textbf{SharePoint CERP}\\ Microsoft Graph API};
+
+\draw[flow, <->] (user) -- (app) node[lbl, above=1pt] {HTTPS};
+\draw[flow, <->] (app) -- (mcp) node[lbl, above=1pt] {MCP\\ (streamable-http)};
+\draw[flow] (sp) -- (ing) node[lbl, below=1pt] {OAuth 2.0\\ (application)};
+\draw[flow] (ing) -- (mcp) node[lbl, right=1pt] {index +\\ manifest};
+\draw[flow, <->] (mcp.south west) -- (sp.north east) node[lbl, sloped, above=1pt, pos=0.6] {group resolution\\ (delegated token)};
+
+\begin{scope}[on background layer]
+\node[draw, dashed, rounded corners=3pt, fit=(app)(mcp)(ing), inner sep=0.4cm,
+      label={[font=\scriptsize\itshape, anchor=south east]above left:{Docker Compose --- DNSI network perimeter}}] {};
+\end{scope}
+\end{tikzpicture}
+\caption{Deployment topology: three containerized services inside the DNSI network perimeter. Document content never leaves the perimeter (NFR09).}
+\label{fig:deployment}
+\end{figure}
+
+\paragraph{Corporate proxy.} The DNSI's TLS-terminating proxy required configuring all HTTP clients with the proxy certificate in their trust stores, a proxy bypass list for internal service communication, and on-premises Mistral 7B deployment to eliminate external API dependencies.
 
 %------------------------------------------------------------------------------
 \section{Design Decisions Summary}
@@ -381,6 +448,6 @@ Auth & OAuth 2.0 delegated PKCE & Service account & Required for per-user ACL; E
 
 This chapter has presented the complete design and architecture of AntiGravity. The four-layer architecture separates presentation, conversational intelligence, context management, and data access concerns. The MCP Context Server is the structural security enforcement point, ensuring ACL verification occurs at the data boundary. Every major design decision has been documented with alternatives and justification.
 
-Three architectural innovations relative to the state of the art are: (1) structural ACL enforcement within the MCP server boundary, eliminating entire classes of access control bypass; (2) MCP as the protocol layer between AI reasoning and data access, providing security enforcement and connector reuse; (3) the over-retrieval design pattern ($K = 20 \to k = 5$ post-filter) maintaining retrieval completeness under restrictive permission environments.
+Three architectural contributions relative to the state of the art are: (1) structural ACL enforcement within the MCP server boundary, preventing the display-layer access-control bypass pattern identified in Chapter~\ref{chap:background}; (2) MCP as the protocol layer between AI reasoning and data access, providing security enforcement and connector reuse; (3) the over-retrieval design pattern ($K = 20 \to k = 5$ post-filter) maintaining retrieval completeness under restrictive permission environments.
 
 The following chapter describes the technical implementation of this architecture.

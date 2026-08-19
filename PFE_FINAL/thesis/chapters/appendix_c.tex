@@ -42,6 +42,9 @@ services:
       - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
       - AZURE_TENANT_ID=${AZURE_TENANT_ID}
       - MISTRAL_MODEL_PATH=/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf
+      - LLM_TEMPERATURE=0.1
+    volumes:
+      - ./models:/models
     depends_on:
       - mcp-server
     ports:
